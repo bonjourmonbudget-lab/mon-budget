@@ -1,0 +1,1429 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Mini-Manager — Apprends l'argent en t'amusant !</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Baloo 2","Comic Sans MS",system-ui,sans-serif;
+    background:linear-gradient(180deg,#dff1ff 0%,#f7fbf2 55%,#fff7e6 100%);
+    min-height:100vh;color:#23415c;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:14px 16px 80px}
+
+  /* ---- Bandeau de jauges ---- */
+  .bandeau{
+    display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:stretch;
+    background:#fff;border-radius:26px;padding:14px 18px;
+    box-shadow:0 8px 24px rgba(35,65,92,.10);position:sticky;top:10px;z-index:10;
+  }
+  .jauge{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
+  .jauge .val{font-size:22px;font-weight:800;line-height:1.1}
+  .jauge .lbl{font-size:12px;color:#7c95a8;font-weight:700}
+  .jauge .rond{font-size:24px}
+  .jauge.tirelire .val{color:#16a34a}
+  .jauge.portefeuille .val{color:#0284c7}
+  .mini-bar{width:100%;height:8px;background:#e6eef5;border-radius:99px;overflow:hidden;margin-top:3px}
+  .mini-bar div{height:100%;background:linear-gradient(90deg,#22c55e,#86efac);border-radius:99px;transition:width .4s}
+  .coeurs{font-size:17px;letter-spacing:2px;line-height:1.2}
+  .jauge.joueurs{
+    background:linear-gradient(135deg,#fbbf24,#fb923c);border:none;color:#fff;cursor:pointer;
+    border-radius:18px;font-family:inherit;transition:.15s;padding:8px 14px
+  }
+  .jauge.joueurs:hover{filter:brightness(1.06);transform:scale(1.03)}
+  .jauge.joueurs .lbl{color:#fff}
+
+  /* ---- Carte situation ---- */
+  .situation{
+    background:#fff;border-radius:28px;margin-top:18px;padding:26px 26px 22px;
+    box-shadow:0 10px 30px rgba(35,65,92,.10);text-align:center;position:relative;overflow:hidden;
+  }
+  .situation::before{content:"";position:absolute;top:-40px;right:-40px;width:130px;height:130px;
+    border-radius:50%;background:rgba(56,189,248,.14)}
+  .badge-semaine{display:inline-block;background:#38bdf8;color:#fff;font-weight:800;font-size:13px;
+    border-radius:99px;padding:5px 16px;margin-bottom:12px}
+  .emoji-situation{font-size:64px;line-height:1.2}
+  .situation h2{font-size:clamp(19px,3.4vw,25px);font-weight:800;margin:10px 0 4px;color:#23415c}
+  .situation .desc{color:#7c95a8;font-size:14px}
+
+  .options{display:flex;flex-direction:column;gap:12px;margin-top:20px}
+  .option{
+    display:flex;align-items:center;gap:14px;text-align:left;width:100%;
+    background:#f7fbf2;border:3px solid #e3f0e6;border-radius:20px;padding:14px 16px;
+    cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  .option:hover:not(:disabled){border-color:#fbbf24;background:#fffbef;transform:scale(1.01)}
+  .option:disabled{opacity:.5;cursor:not-allowed}
+  .option .o-ico{font-size:34px;flex:none;width:52px;height:52px;display:flex;align-items:center;justify-content:center;
+    background:#fff;border-radius:16px;box-shadow:0 3px 10px rgba(35,65,92,.08)}
+  .option .o-txt{flex:1;font-weight:700;font-size:15.5px;color:#23415c}
+  .option .o-chips{display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex:none}
+  .chip{font-size:12.5px;font-weight:800;border-radius:99px;padding:3px 10px;white-space:nowrap}
+  .chip.dep{background:#fee2e2;color:#dc2626}
+  .chip.gain{background:#dcfce7;color:#16a34a}
+  .chip.coeur-haut{background:#fce7f3;color:#db2777}
+  .chip.coeur-bas{background:#f1f5f9;color:#64748b}
+  .chip.manque{background:#ffedd5;color:#ea580c}
+
+  /* ---- Actions rapides ---- */
+  .actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:18px}
+  .action{
+    background:#fff;border:3px solid transparent;border-radius:22px;padding:16px 12px;
+    display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+    font-family:inherit;font-weight:800;font-size:14.5px;color:#23415c;
+    box-shadow:0 6px 18px rgba(35,65,92,.09);transition:.15s;
+  }
+  .action:hover{transform:translateY(-3px)}
+  .action .a-ico{font-size:30px}
+  .action.tirelire-act{background:#ecfdf5;border-color:#a7f3d0}
+  .action.magasin-act{background:#fef9ec;border-color:#fde68a}
+  .action.semaine-act{background:#eff6ff;border-color:#bfdbfe}
+  .action.objectif-act{background:#fdf2f8;border-color:#fbcfe8}
+  .action:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+  /* ---- Inventaire ---- */
+  .inventaire{background:#fff;border-radius:22px;margin-top:18px;padding:16px 20px;box-shadow:0 6px 18px rgba(35,65,92,.08)}
+  .inventaire h3{font-size:14px;color:#7c95a8;font-weight:800;letter-spacing:.5px}
+  .inventaire .objets{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;min-height:34px;align-items:center}
+  .inventaire .objet{background:#f7fbf2;border:2px solid #e3f0e6;border-radius:14px;padding:5px 12px;font-size:20px}
+  .inventaire .rien{color:#b0c4d2;font-size:13px}
+
+  /* ---- Mascotte ---- */
+  .mascotte{
+    position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+    width:min(560px,94vw);background:#fff;border-radius:24px;padding:16px 18px;
+    box-shadow:0 16px 50px rgba(35,65,92,.28);display:flex;gap:14px;align-items:flex-start;z-index:50;
+    border:3px solid #fde68a;
+  }
+  .mascotte .bete{font-size:44px;flex:none;background:#fff7e6;border-radius:50%;width:70px;height:70px;
+    display:flex;align-items:center;justify-content:center;border:3px solid #fde68a}
+  .mascotte .bulle{flex:1}
+  .mascotte .nom{font-size:12px;font-weight:800;color:#f59e0b;letter-spacing:.5px}
+  .mascotte .message{font-size:14.5px;font-weight:600;color:#23415c;margin:2px 0 8px}
+  .mascotte .impacts{display:flex;gap:6px;flex-wrap:wrap}
+  .mascotte .btn-ok{
+    background:linear-gradient(135deg,#fbbf24,#fb923c);color:#fff;border:none;border-radius:14px;
+    padding:9px 22px;font-family:inherit;font-weight:800;font-size:14px;cursor:pointer;width:100%;
+  }
+
+  /* ---- Tirelire / magasin modales ---- */
+  .modale-fond{position:fixed;inset:0;background:rgba(20,40,60,.45);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px}
+  .modale{background:#fff;border-radius:26px;padding:24px;width:min(430px,100%);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  .modale h3{font-size:19px;margin-bottom:14px;color:#23415c}
+  .liste-magasin{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .article{display:flex;flex-direction:column;align-items:center;gap:4px;background:#f7fbf2;border:2px solid #e3f0e6;
+    border-radius:18px;padding:12px;cursor:pointer;font-family:inherit;transition:.15s}
+  .article:hover:not(:disabled){border-color:#fbbf24;background:#fffbef}
+  .article:disabled{opacity:.45;cursor:not-allowed}
+  .article .a-e{font-size:30px}
+  .article .a-p{font-size:13px;font-weight:800;color:#0284c7}
+  .transferts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+  .transferts button{background:#ecfdf5;border:2px solid #a7f3d0;border-radius:16px;padding:12px 18px;
+    font-family:inherit;font-weight:800;font-size:15px;color:#16a34a;cursor:pointer;transition:.15s}
+  .transferts button:hover:not(:disabled){background:#d1fae5}
+  .transferts button:disabled{opacity:.4;cursor:not-allowed}
+  .btn-fermer{margin-top:14px;width:100%;background:#f1f5f9;border:none;border-radius:14px;padding:11px;
+    font-family:inherit;font-weight:800;color:#23415c;cursor:pointer}
+
+  /* ---- Bienvenue ---- */
+  .bienvenue{max-width:460px;margin:60px auto 0;background:#fff;border-radius:30px;padding:36px 30px;text-align:center;
+    box-shadow:0 16px 50px rgba(35,65,92,.14)}
+  .bienvenue .mascotte-grande{font-size:70px}
+  .bienvenue h1{font-size:26px;color:#23415c;margin:10px 0 6px}
+  .bienvenue p{color:#7c95a8;font-size:14.5px;margin-bottom:20px}
+  .bienvenue input{width:100%;background:#f7fbf2;border:3px solid #e3f0e6;border-radius:16px;padding:13px 16px;
+    font-family:inherit;font-size:17px;font-weight:700;color:#23415c;text-align:center;outline:none}
+  .bienvenue input:focus{border-color:#38bdf8}
+  .bienvenue .objectifs-choix{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+  .bienvenue .objectifs-choix button{background:#ecfdf5;border:2px solid #a7f3d0;border-radius:16px;padding:10px 14px;
+    font-family:inherit;font-weight:800;color:#16a34a;cursor:pointer;font-size:14px}
+  .bienvenue .objectifs-choix button.choisi{background:#16a34a;color:#fff;border-color:#16a34a}
+  .btn-partir{width:100%;margin-top:22px;background:linear-gradient(135deg,#fbbf24,#fb923c);color:#fff;border:none;
+    border-radius:18px;padding:15px;font-family:inherit;font-size:18px;font-weight:800;cursor:pointer}
+
+  /* ---- Confettis ---- */
+  .confetti{position:fixed;top:-20px;z-index:100;font-size:22px;animation:tombe linear forwards}
+  @keyframes tombe{to{transform:translateY(110vh) rotate(720deg);opacity:.6}}
+
+  .retour{position:fixed;top:12px;right:14px;background:#fff;border-radius:99px;padding:7px 15px;
+    font-weight:800;font-size:13px;color:#23415c;text-decoration:none;box-shadow:0 4px 14px rgba(35,65,92,.12);z-index:30}
+  #haut-page{
+    position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:55;width:48px;height:48px;
+    border-radius:50%;background:linear-gradient(135deg,#7c68f7,#a98afc);color:#fff;border:none;
+    font-size:20px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(124,98,246,.4);
+    display:none;align-items:center;justify-content:center;transition:.15s
+  }
+  #haut-page:hover{filter:brightness(1.12)}
+
+  /* ---- Profils joueurs ---- */
+  #haut-page:hover{filter:brightness(1.12)}
+  .grid-profils{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:20px}
+  .profil-carte{
+    background:#fff;border:3px solid #a7f3d0;border-radius:24px;padding:18px;text-align:center;
+    box-shadow:0 8px 24px rgba(35,65,92,.10);position:relative
+  }
+  .p-avatar{font-size:42px;line-height:1.2}
+  .p-nom{font-size:20px;font-weight:800;color:#23415c;margin:4px 0 6px}
+  .p-stats{font-size:13px;color:#7c95a8;font-weight:700}
+  .p-objectif{font-size:12.5px;color:#16a34a;font-weight:700;margin-top:2px}
+  .btn-jouer{
+    width:100%;margin-top:12px;background:linear-gradient(135deg,#fbbf24,#fb923c);color:#fff;border:none;
+    border-radius:16px;padding:11px;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer
+  }
+  .btn-jouer:hover{filter:brightness(1.06)}
+  .p-liens{margin-top:10px;font-size:12.5px}
+  .p-liens a{cursor:pointer;color:#0284c7;text-decoration:underline}
+  .p-liens a:hover{color:#ea580c}
+  .carte-ajout{border-style:dashed;cursor:pointer;transition:.15s}
+  .carte-ajout:hover{transform:translateY(-3px);border-color:#fbbf24;background:#fffbef}
+  @media(max-width:640px){ .bandeau{grid-template-columns:1fr 1fr} .jauge.bonheur{grid-column:1/-1;flex-direction:row;justify-content:center;gap:8px} }
+</style>
+</head>
+<body>
+<a class="retour" href="app.html">← Mon Budget</a>
+<div class="wrap">
+  <header class="bandeau">
+    <div class="jauge portefeuille"><div class="val" id="j-porte">0 €</div><div><span class="rond">💰</span> <span class="lbl">Portefeuille</span></div></div>
+    <div class="jauge tirelire"><div class="val" id="j-tirelire">0 €</div><div><span class="rond">🐷</span> <span class="lbl">Tirelire</span></div><div class="mini-bar"><div id="j-tirelire-bar" style="width:0%"></div></div></div>
+    <div class="jauge bonheur"><div class="val coeurs" id="j-coeurs"></div><div><span class="rond" id="j-humeur">😄</span> <span class="lbl">Bonheur</span></div></div>
+    <button class="jauge joueurs" id="btn-joueurs" title="Changer de joueur"><div class="rond">👥</div><div class="lbl" style="color:#fff">Joueurs</div></button>
+  </header>
+
+  <main id="contenu"></main>
+</div>
+
+<div id="zone-mascotte"></div>
+<div id="zone-modale"></div>
+<button id="haut-page" title="Retour en haut de page" style="display:none">⬆</button>
+
+<script>
+"use strict";
+
+/* ============================== Scénarios ============================== */
+const SCENARIOS = [
+ {emoji:"🎂", titre:"C'est l'anniversaire de ton meilleur ami !", desc:"Dans une semaine, c'est la fête. Qu'est-ce que tu fais ?",
+  opts:[
+   {i:"🎁", t:"Acheter un gros cadeau", p:-15, h:3, m:"Généreux ! Ton ami va être super content… mais ton portefeuille a bien maigri. Pense à ta tirelire pour les prochaines fois."},
+   {i:"✂️", t:"Fabriquer un cadeau toi-même", p:-2, h:2, m:"Bravo ! Un cadeau fait main vaut souvent plus qu'un cadeau cher. Et il te reste de l'argent pour ton projet !"},
+   {i:"💌", t:"Une jolie carte maison", p:0, h:-1, m:"Une carte, c'est gentil… mais un peu léger pour son anniversaire. Il existe des cadeaux qui coûtent presque rien !"}]},
+ {emoji:"🪙", titre:"Tu trouves un billet de 5 € par terre !", desc:"Personne ne t'a vu le ramasser. Que fais-tu ?",
+  opts:[
+   {i:"🙋", t:"Le rendre à son propriétaire", p:0, h:3, m:"Bravo ! Être honnête ne rapporte pas des euros… mais ça rapporte la fierté. Et ça, ça ne s'achète pas."},
+   {i:"💰", t:"Le garder dans ton portefeuille", p:5, h:-1, m:"Tu as 5 € de plus… mais tu repenseras à ce billet. L'argent trouvé aux dépens de quelqu'un, ça pèse sur le cœur."},
+   {i:"❤️", t:"Le donner à une bonne cause", p:0, h:2, m:"Généreux ! Tu as transformé un hasard en bon acte. Chapeau."}]},
+ {emoji:"🎮", titre:"Le jeu vidéo dont tu rêvais est enfin sorti !", desc:"Tous tes copains en parlent depuis des mois.",
+  opts:[
+   {i:"🛒", t:"L'acheter tout de suite", p:-40, h:2, m:"Content ? Oui ! Mais voilà le piège : dépenser tout de suite, c'est souvent payer plus cher plus tard."},
+   {i:"🐷", t:"Économiser dans ta tirelire", p:0, h:1, m:"Bien joué ! Chaque semaine épargnée te rapproche de ton jeu. La patience, c'est le super-pouvoir des grands épargnants."},
+   {i:"👥", t:"Y jouer chez ton ami", p:0, h:1, m:"Malin ! Tester chez un ami avant d'acheter : le meilleur moyen de savoir si ça vaut le coup."}]},
+ {emoji:"🚲", titre:"Ton vélo a une crevaison !", desc:"Et tu en as besoin pour aller à l'école…",
+  opts:[
+   {i:"🔧", t:"Le faire réparer correctement", p:-12, h:2, m:"Bien vu ! Entretenir ses affaires coûte toujours moins cher que de tout racheter."},
+   {i:"🩹", t:"Un dépannage rapide", p:-3, h:0, m:"Dépanné pour aujourd'hui… mais prévois la vraie réparation, sinon ça reviendra plus cher."},
+   {i:"🚶", t:"Marcher à pied", p:0, h:-2, m:"Économie réalisée… mais quelle fatigue ! Parfois, dépenser un peu évite de gros ennuis."}]},
+ {emoji:"🎡", titre:"La fête foraine s'installe en ville !", desc:"Manèges, barbe à papa, lumières partout…",
+  opts:[
+   {i:"🎢", t:"Faire toutes les attractions", p:-12, h:4, m:"Quelle soirée ! Tu as transformé ton argent en souvenirs. Tant que c'est prévu dans ton budget, savoure !"},
+   {i:"🎪", t:"Une seule attraction, bien choisie", p:-4, h:2, m:"Bien joué : choisir UNE chose qu'on aime vraiment, c'est ça, dépenser intelligemment."},
+   {i:"🚶", t:"Juste flâner dans l'ambiance", p:0, h:1, m:"L'ambiance gratuitement, c'est possible ! Tes euros restent pour un projet plus grand."}]},
+ {emoji:"🐶", titre:"Collecte pour le refuge des animaux", desc:"Des bénévoles collectent devant le magasin.",
+  opts:[
+   {i:"❤️", t:"Donner 5 €", p:-5, h:4, m:"Les animaux te remercient ! Donner, c'est transformer de l'argent en bonheur — et ça marche très bien."},
+   {i:"🪙", t:"Donner 1 €", p:-1, h:2, m:"Même petit, ton geste compte. Un peu, c'est toujours mieux que rien."},
+   {i:"🙈", t:"Ne rien donner", p:0, h:-1, m:"On ne peut pas tout donner, c'est vrai. Mais donne quand tu peux : ça fait du bien aussi à toi."}]},
+ {emoji:"🧹", titre:"Ta chambre a besoin d'un GRAND rangement !", desc:"On ne voit plus le sol…",
+  opts:[
+   {i:"✨", t:"Grand rangement + aider tes parents", p:0, h:2, m:"Une chambre nette et des parents contents : le double bonus gratuit !"},
+   {i:"🛏️", t:"Juste faire ton lit", p:0, h:1, m:"Petit pas aujourd'hui, grand rangement demain."},
+   {i:"🙅", t:"Fermer la porte et oublier", p:0, h:-2, m:"La chambre t'attend toujours… et le désordre coûte du temps et du bonheur."}]},
+ {emoji:"👟", titre:"Tes chaussures sont complètement usées !", desc:"Il va pleuvoir cette semaine…",
+  opts:[
+   {i:"⭐", t:"Des baskets de marque", p:-45, h:3, m:"Stylish ! Mais regarde : 45 €, c'est ton objectif qui s'envole. La marque, ça coûte cher."},
+   {i:"✅", t:"Des baskets solides et confortables", p:-20, h:2, m:"Le choix du malin : confortable, solide, et ta tirelire respire."},
+   {i:"⏳", t:"Attendre les soldes", p:0, h:-1, m:"La patience est une vertu… mais attention à tes pieds en attendant !"}]},
+ {emoji:"🎬", titre:"Toute la classe va au cinéma !", desc:"Tu es invité, mais tu dois payer ta place.",
+  opts:[
+   {i:"🍿", t:"Place + pop-corn XL", p:-12, h:3, m:"Avec les copains ET le pop-corn : top ! Mais le pop-corn du cinéma coûte 3 fois son prix…"},
+   {i:"🎟️", t:"Juste la place", p:-8, h:2, m:"L'essentiel : le film avec les copains. Le pop-corn peut attendre."},
+   {i:"😔", t:"Rester à la maison", p:0, h:-2, m:"Économiser c'est bien… mais ne rate pas les moments avec tes amis pour quelques euros !"}]},
+ {emoji:"🥤", titre:"Tu as très soif après le sport !", desc:"Le distributeur est juste là, tout près…",
+  opts:[
+   {i:"🥤", t:"Un soda au distributeur", p:-2, h:1, m:"2 € pour une canette… c'est le prix du confort. Les petites dépenses répétées sont les plus sournoises !"},
+   {i:"💧", t:"Ta gourde d'eau maison", p:0, h:1, m:"CHAMPION ! Ta gourde te fait économiser des dizaines d'euros par an. C'est ça, les yeux ouverts."},
+   {i:"🚰", t:"Ne rien boire", p:0, h:-2, m:"Économiser, oui — mais jamais sur ta santé !"}]},
+ {emoji:"📱", titre:"L'écran de ton téléphone est fêlé !", desc:"Une petite fissure, mais elle grandit…",
+  opts:[
+   {i:"🔧", t:"Le faire réparer", p:-30, h:2, m:"Réparer avant que ça empire : la décision d'un vrai gestionnaire."},
+   {i:"🛡️", t:"Mettre une protection d'écran", p:-6, h:1, m:"Mieux vaut prévenir : 6 € maintenant contre 30 € plus tard."},
+   {i:"😅", t:"Continuer comme ça", p:0, h:-1, m:"Espérons que ça ne s'aggrave pas… les petites réparations évitent les grosses dépenses."}]},
+ {emoji:"🤝", titre:"Tes parents te proposent un deal !", desc:"Ils ont besoin d'aide à la maison et sont prêts à te récompenser.",
+  opts:[
+   {i:"🧽", t:"Grand ménage du printemps contre 10 €", p:10, h:2, m:"Travailler pour gagner : l'argent mérité est le plus précieux de tous !"},
+   {i:"📚", t:"Tenir tes notes pendant un mois contre 5 €", p:5, h:3, m:"L'école d'abord, et tu es récompensé pour la discipline. Double victoire !"},
+   {i:"🛋️", t:"Refuser et rester tranquille", p:0, h:0, m:"Se reposer, c'est permis ! Mais l'argent mérité ne tombe pas du ciel."}]},
+
+
+ {emoji:"💍", titre:"Anniversaire de mariage de tes parents !", desc:"25 ans, c'est rare et important.",
+  opts:[
+   {i:"🎉", t:"Organiser une surprise avec tes économies", p:-15, h:4, m:"Waouh ! Tu as utilisé ton épargne pour les personnes que tu aimes. Souvenir garanti pour eux… et pour toi."},
+   {i:"🎨", t:"Un dessin et un poème", p:0, h:3, m:"Le meilleur des cadeaux : du temps et du cœur. Ils vont le garder toute leur vie !"},
+   {i:"😶", t:"Ne rien faire de spécial", p:0, h:-1, m:"Un petit quelque chose fait toujours plus plaisir que rien."}]},
+
+
+
+
+
+
+
+
+
+
+ {emoji:"🌡️", titre:"Tu te réveilles avec la gorge qui gratte…", desc:"L'école attend, mais tu ne te sens pas terrible.",
+  opts:[
+   {i:"🏠", t:"Rester à la maison et te soigner", p:0, h:2, m:"Écouter son corps, c'est intelligent. On économise de l'énergie… et on guérit plus vite !"},
+   {i:"💊", t:"Aller à l'école avec un bonbon", p:-2, h:-1, m:"Courageux, mais un bonbon ne soigne pas une gorge irritée. Parfois il faut vraiment se reposer."},
+   {i:"🤒", t:"Y aller quand même sans rien faire", p:0, h:-2, m:"Tu risques d'être encore plus malade demain… et une santé abîmée, ça coûte cher !"}]},
+ {emoji:"✏️", titre:"La rentrée arrive : la liste de fournitures est longue !", desc:"Stylos, cahiers, calculatrice…",
+  opts:[
+   {i:"🛒", t:"Tout acheter neuf en grande surface", p:-35, h:1, m:"Tout neuf, c'est pratique… mais regarde la facture ! Il existe des astuces."},
+   {i:"♻️", t:"Récupérer ceux de l'an dernier + compléter", p:-12, h:2, m:"CHAMPION ! Réutiliser, compléter : la moitié de la facture économisée. Le développement durable dit merci aussi."},
+   {i:"⏳", t:"Attendre les promotions de septembre", p:0, h:-1, m:"Les promos viennent après la rentrée… tu risques de commencer l'année sans stylo !"}]},
+ {emoji:"⚽", titre:"Ton ballon a fini dans le ruisseau !", desc:"Il flotte, il s'éloigne…",
+  opts:[
+   {i:"🏃", t:"Le rattraper avant le pont", p:0, h:2, m:"Un sprint héroïque et un ballon sauvé : le meilleur des sauvetages est gratuit !"},
+   {i:"🛒", t:"En acheter un nouveau", p:-15, h:0, m:"Le ballon était récupérable… 15 € partis dans le ruisseau avec l'ancien."},
+   {i:"😔", t:"Rentrer en pleurant", p:0, h:-2, m:"Un ballon perdu n'est pas une raison pour perdre le sourire !"}]},
+ {emoji:"📖", titre:"Le livre de la bibliothèque est abîmé !", desc:"Tu l'avais posé sous ta gourde… et l'eau a coulé.",
+  opts:[
+   {i:"🤝", t:"L'avouer et proposer de le rembourser", p:-8, h:3, m:"Honnête et responsable ! Assumer ses erreurs coûte moins cher que les cacher."},
+   {i:"🙈", t:"Le rendre en espérant que personne ne voit", p:0, h:-2, m:"Si la bibliothèque le découvre, d'autres enfants ne pourront plus l'emprunter… et ta conscience le sait."},
+   {i:"🎨", t:"Le réparer avec du scotch et t'excuser", p:-1, h:2, m:"Réparer + s'excuser : une belle façon de réparer une bêtise à petit prix !"}]},
+ {emoji:"🎄", titre:"Marché de Noël : tout brille, tout sent bon !", desc:"Tu as repéré une jolie décoration.",
+  opts:[
+   {i:"🎅", t:"Acheter un cadeau pour ta famille", p:-10, h:4, m:"Offrir avec son propre argent : la plus belle des dépenses ! Tes parents seront fiers."},
+   {i:"🎨", t:"Fabriquer des décorations en papier", p:-1, h:3, m:"Des flocons en papier, c'est presque gratuit et c'est TOI qui les as faits !"},
+   {i:"🍭", t:"Tout dépenser en bonbons", p:-8, h:1, m:"Les bonbons fondent vite… les souvenirs de fabrication restent !"}]},
+ {emoji:"☀️", titre:"Vacances au bord de la mer !", desc:"Il fait très chaud sur la plage.",
+  opts:[
+   {i:"🧴", t:"Crème solaire + chapeau", p:-12, h:2, m:"Protéger sa peau n'est pas une dépense, c'est un investissement santé !"},
+   {i:"🕶️", t:"Lunettes de soleil fantaisie", p:-5, h:1, m:"Stylish… mais sans protection UV, ça éclaire mal et ça fatigue les yeux."},
+   {i:"🚫", t:"Rien, tu aimes le soleil", p:0, h:-2, m:"Les coups de soleil font très mal… et les soins coûtent cher. Protège-toi !"}]},
+ {emoji:"🧺", titre:"Pique-nique de classe demain !", desc:"Chacun apporte quelque chose à partager.",
+  opts:[
+   {i:"🥪", t:"Préparer des sandwichs maison", p:-4, h:3, m:"Maison = moins cher et plus bon ! Et tout le monde va adorer."},
+   {i:"🛒", t:"Acheter un pack de gâteaux", p:-6, h:2, m:"Pratique, mais regarde : le fait-maison coûte presque deux fois moins cher."},
+   {i:"🙈", t:"Ne rien apporter", p:0, h:-1, m:"On t'a invité quand même… mais apporter sa part, c'est plus fair-play !"}]},
+ {emoji:"🪖", titre:"Ton casque de vélo a une fissure !", desc:"Il a pris un choc, mais tu ne portes jamais ce casque de toute façon…",
+  opts:[
+   {i:"🛒", t:"En racheter un tout de suite", p:-20, h:3, m:"LA dépense qui vaut le plus cher : ta tête ! Bien joué, champion de la sécurité."},
+   {i:"🚫", t:"Continuer sans casque", p:0, h:-2, m:"Une chute sans casque peut coûter très très cher à l'hôpital… Le risque n'en vaut JAMAIS la peine."},
+   {i:"🤝", t:"Emprunter celui de ton frère", p:0, h:1, m:"Malin ! Vérifie juste qu'il est à ta taille pour bien protéger."}]},
+ {emoji:"🎤", titre:"Karaoké chez ton copain ce soir !", desc:"Il propose de commander des snacks.",
+  opts:[
+   {i:"🍿", t:"Participer pour les snacks", p:-4, h:3, m:"Participer aux frais communs : équitable et convivial !"},
+   {i:"🏠", t:"Apporter des biscuits de la maison", p:-1, h:2, m:"Récupérer ce qui existe déjà : malin ! Les copains adorent partager."},
+   {i:"🙈", t:"Ne rien mettre", p:0, h:-1, m:"Tu chantes gratis mais tu manges gratis ? La prochaine fois, participe un peu !"}]},
+ {emoji:"🌧️", titre:"Il pleut et ton parapluie est cassé !", desc:"L'école est à 15 minutes à pied.",
+  opts:[
+   {i:"🧥", t:"Mettre ton manteau à capuche", p:0, h:2, m:"Gratuit et efficace ! Pas besoin de parapluie pour affronter la pluie."},
+   {i:"🛒", t:"Acheter un parapluie neuf", p:-8, h:0, m:"Urgent… mais les achats pressés sont rarement les moins chers. Regarde les soldes !"},
+   {i:"🚶", t:"Y aller trempé", p:0, h:-2, m:"Être mouillé toute la journée à l'école : bonjour le rhume et le médecin !"}]},
+ {emoji:"🍫", titre:"Vente de gâteaux au profit de ta classe !", desc:"Pour financer la sortie de fin d'année.",
+  opts:[
+   {i:"👩‍🍳", t:"Cuire des gâteaux avec maman et les vendre", p:5, h:3, m:"Travailler en équipe pour gagner : 5 € mérités et la classe te dit merci !"},
+   {i:"💰", t:"Acheter 2 parts pour soutenir", p:-4, h:2, m:"Généreux ! Soutenir les projets collectifs, ça rapporte des souvenirs."},
+   {i:"🚫", t:"Passer ton chemin", p:0, h:0, m:"Personne n'est obligé… mais participer, c'est plus fun !"}]},
+ {emoji:"🎃", titre:"Halloween approche !", desc:"Le déguisement parfait, c'est ton rêve.",
+  opts:[
+   {i:"🛒", t:"Le costume super-héros complet", p:-25, h:3, m:"Effet garanti ! Mais un costume porté une fois par an, ça fait cher l'heure de jeu…"},
+   {i:"🎨", t:"Le créer avec des vieux vêtements", p:-3, h:3, m:"Créatif et unique ! Ton déguisement fera sensation ET ta tirelire reste pleine."},
+   {i:"🚫", t:"Sans déguisement cette année", p:0, h:-1, m:"C'est permis ! Mais Halloween est bien plus drôle déguisé."}]},
+ {emoji:"📱", titre:"Tes parents proposent ton premier forfait téléphone !", desc:"2 €/mois en sms illimités, ou 10 € avec internet.",
+  opts:[
+   {i:"💬", t:"Le petit forfait à 2 €", p:-2, h:2, m:"Commencer petit et grandir : la stratégie des pros ! Tu pourras upgrader quand tu en auras vraiment besoin."},
+   {i:"🌐", t:"Le gros avec internet", p:-10, h:1, m:"Le confort total… mais 8 € de plus chaque mois, c'est 96 € par an !"},
+   {i:"🚫", t:"Refuser pour l'instant", p:0, h:0, m:"Sage décision si tu ne l'utilises pas ! L'argent épargné servira mieux."}]},
+ {emoji:"🐕", titre:"Ta voisine part en week-end : elle cherche un dog-sitter !", desc:"Promener Rex samedi et dimanche, 8 €.",
+  opts:[
+   {i:"🦮", t:"Accepter avec enthousiasme", p:8, h:3, m:"Un job bien fait, de l'air frais et 8 € gagnés : la journée parfaite !"},
+   {i:"⏰", t:"Accepter mais seulement samedi", p:4, h:2, m:"Un compromis honnête : tu aides ET tu gardes du temps libre."},
+   {i:"🛋️", t:"Refuser, tu préfères jouer", p:0, h:0, m:"Le repos a de la valeur aussi… mais l'occasion ne se représentera peut-être pas !"}]},
+ {emoji:"🎭", titre:"Le spectacle de l'école approche !", desc:"Il te faut un costume de renard.",
+  opts:[
+   {i:"🎨", t:"Emprunter + customiser un vieux t-shirt", p:-2, h:3, m:"Une tête de renard en feutrine sur ton vieux t-shirt rouge : unique au monde et pas cher !"},
+   {i:"🛒", t:"Louer un costume", p:-15, h:1, m:"Pratique… mais 15 € pour une soirée, ça pique. Et tu devras le rendre !"},
+   {i:"🙈", t:"Déclarer forfait", p:0, h:-2, m:"Sans toi, le spectacle perd un renard ! Parfois participer vaut plus que l'argent."}]},
+ {emoji:"👖", titre:"Tes pantalons sont trop courts !", desc:"Tu as encore grandi de 4 centimètres cet été.",
+  opts:[
+   {i:"🛒", t:"Deux neufs à la mode", p:-30, h:2, m:"Confortable et stylé ! Grandir coûte cher aux parents… remercie-les."},
+   {i:"♻️", t:"Ceux de ton grand cousin", p:0, h:2, m:"La mode du recyclage familial : gratuit, écologique et souvent de bonne qualité !"},
+   {i:"⏳", t:"Serrer un peu la ceinture et attendre", p:0, h:-1, m:"Ça peut passer quelques semaines… mais pas tout l'hiver !"}]},
+ {emoji:"⭐", titre:"Bulletin parfait : 18 de moyenne !", desc:"Tes parents veulent te récompenser.",
+  opts:[
+   {i:"💰", t:"Demander l'argent pour ta tirelire", p:10, h:3, m:"Récompense + épargne : tu accélères vers ton objectif de 10 € ! Excellent choix."},
+   {i:"🍕", t:"Une soirée pizza en famille", p:0, h:3, m:"Les souvenirs de fêtes familiales ne s'achètent pas… enfin si, mais c'est papa qui paie ! 😄"},
+   {i:"🧸", t:"Un jouet tout de suite", p:0, h:1, m:"Un plaisir immédiat, c'est bien aussi ! Mais compare avec ton grand objectif…"}]},
+ {emoji:"🍎", titre:"À la cantine, le menu propose burger-frites !", desc:"Ou la salade composée du chef… même prix.",
+  opts:[
+   {i:"🍔", t:"Le burger-frites", p:0, h:2, m:"Un plaisir de temps en temps, pourquoi pas ! Juste pas tous les jours…"},
+   {i:"🥗", t:"La salade composée", p:0, h:2, m:"Ton corps te dit merci ! Bien manger, c'est de l'énergie pour jouer."},
+   {i:"🍪", t:"Juste un yaourt et un dessert", p:0, h:-1, m:"Ça ne va pas suffir pour tenir l'après-midi ! Bien se nourrir n'est pas de l'argent gaspillé."}]},
+ {emoji:"🎣", titre:"Grand-père t'invite à la pêche !", desc:"Il te prête sa canne, mais il manque des appâts.",
+  opts:[
+   {i:"🪱", t:"Acheter les appâts toi-même", p:-3, h:4, m:"Participer aux préparatifs : le meilleur moyen de montrer que tu tiens ta place dans l'équipe !"},
+   {i:"🥖", t:"Fabriquer des leurres au pain", p:0, h:3, m:"Les astuces de grand-père : gratuites et souvent efficaces !"},
+   {i:"🙈", t:"Y aller les mains dans les poches", p:0, h:0, m:"Invité, c'est permis… mais participer, c'est montrer qu'on est grand."}]},
+ {emoji:"💡", titre:"Facture d'électricité explosive !", desc:"Papa t'explique que laisser les lumières allumées coûte cher.",
+  opts:[
+   {i:"🌒", t:"Devenir le champion des lumières éteintes", p:2, h:3, m:"Papa te donne 2 € de bonus énergie ! Économiser, ça peut RAPPORTER."},
+   {i:"🔌", t:"Débrancher tes chargeurs la nuit", p:1, h:2, m:"Même les chargeurs branchés sans téléphone consomment ! 1 € de bonus mérité."},
+   {i:"🚫", t:"Continuer comme avant", p:0, h:-1, m:"Chaque watt gaspillé se paie… et la planète aussi compte sur toi !"}]},
+ {emoji:"🎁", titre:"La classe offre un cadeau à la maîtresse !", desc:"Cagnotte commune : chacun donne ce qu'il veut.",
+  opts:[
+   {i:"💐", t:"Donner 3 € pour un beau bouquet", p:-3, h:3, m:"Un cadeau collectif à petit prix individuel : la force du groupe !"},
+   {i:"🎨", t:"Dessiner la couverture du cadeau", p:0, h:3, m:"Ton talent est ta monnaie ! La plus belle contribution est parfois gratuite."},
+   {i:"🙈", t:"Ne pas participer", p:0, h:-1, m:"Même 1 € aurait montré ta gratitude…"}]},
+ {emoji:"🛴", titre:"Ta copine te prête sa trottinette électrique !", desc:"Mais la batterie se vide… vite.",
+  opts:[
+   {i:"🔋", t:"La recharger chez toi", p:0, h:3, m:"Rendre service en retour : le prêt fonctionne dans les deux sens !"},
+   {i:"⛽", t:"La rendre à moitié vide", p:0, h:-1, m:"Prêter, c'est magnifique ; rendre vide, c'est moins sympa…"},
+   {i:"🚫", t:"Refuser par peur de l'abîmer", p:0, h:0, m:"Prudent, c'est bien ! Mais avec soin, tu aurais eu du fun gratuit."}]},
+ {emoji:"🥕", titre:"Le jardin déborde de tomates !", desc:"Bien plus que la famille ne peut manger.",
+  opts:[
+   {i:"🧺", t:"Les vendre au marché avec papa", p:7, h:3, m:"Le jardin qui rapporte ! 7 € de récolte vendue : voilà le travail qui paie."},
+   {i:"🤝", t:"En offrir aux voisins", p:0, h:3, m:"Générosité fraîcheur : les voisins t'adoreront (et te le rendront !)."},
+   {i:"🗑️", t:"Les laisser pourrir", p:0, h:-2, m:"Gaspiller une récolte, c'est jeter le travail et l'argent des graines !"}]},
+ {emoji:"🖍️", titre:"Tes feutres sont tous secs…", desc:"Et le cours d'arts plastiques est demain.",
+  opts:[
+   {i:"♻️", t:"Refaire fonctionner avec de l'eau chaude", p:0, h:2, m:"Astuce de pro : beaucoup de feutres repartent ! Essaie toujours avant de racheter."},
+   {i:"🛒", t:"Boîte complète neuve", p:-12, h:1, m:"Neuf, pratique… mais si la moitié des anciens repartaient, tu as payé deux fois."},
+   {i:"🤝", t:"Emprunter ceux de ta voisine", p:0, h:1, m:"Dépannage sympa ! Pense à lui rendre un service un jour."}]},
+ {emoji:"🚌", titre:"La carte de bus scolaire augmente !", desc:"120 € l'année… ou le vélo chaque jour.",
+  opts:[
+   {i:"🚲", t:"Prendre le vélo (2 km)", p:0, h:3, m:"Gratuit, écologique et sportif : le jackpot des transports ! Ton corps et ta tirelire adorent."},
+   {i:"🚌", t:"Payer la moitié avec tes économies", p:-60, h:1, m:"Participer aux frais importants : très mature ! Mais 60 €, c'est une grosse part de tirelire."},
+   {i:"🚗", t:"Demander le trajet en voiture", p:0, h:-1, m:"Confortable… mais papa devra conduire chaque jour : son temps aussi a de la valeur."}]},
+ {emoji:"🎮", titre:"Un jeu propose un abonnement à 5 €/mois !", desc:"Avec des bonus exclusifs chaque semaine.",
+  opts:[
+   {i:"🐷", t:"Refuser et garder ta tirelire", p:0, h:2, m:"60 € par an pour des bonus virtuels ? Ta console de rêve se rapprochera plus vite sans !"},
+   {i:"⏳", t:"Essayer le mois gratuit puis décider", p:0, h:2, m:"Tester avant de s'engager : LE réflexe anti-arnaque ! Attention au prélèvement auto…"},
+   {i:"💳", t:"S'abonner tout de suite", p:-5, h:1, m:"Les abonnements se renouvellent tout seuls… et 5 € par mois, c'est 60 € qui s'évaporent !"}]},
+ {emoji:"🧣", titre:"Premier froid de l'année !", desc:"Tu as oublié ton écharpe à l'école… depuis une semaine.",
+  opts:[
+   {i:"🏫", t:"Aller la chercher au lost & found", p:0, h:2, m:"Perdu, retrouvé, gratuit ! Vérifie toujours les objets perdus avant de racheter."},
+   {i:"🛒", t:"Acheter une nouvelle écharpe", p:-10, h:0, m:"Chaude, oui… mais l'ancienne t'attendait sagement à l'école !"},
+   {i:"🥶", t:"Supporter le froid", p:0, h:-2, m:"Un rhume n'est jamais loin… et le médecin, ça coûte plus cher qu'une écharpe."}]},
+ {emoji:"🧩", titre:"Le puzzle 1000 pièces de tes rêves !", desc:"Il est en vitrine, superbe, à 18 €.",
+  opts:[
+   {i:"🐷", t:"Mettre de côté 2 € par semaine", p:0, h:2, m:"Dans 9 semaines il est à toi ! La patience transforme les envies en victoires."},
+   {i:"🛒", t:"L'acheter immédiatement", p:-18, h:2, m:"Plaisir immédiat assumé ! Amuse-toi bien… mais la tirelire est vide."},
+   {i:"🔁", t:"Chercher l'occasion à 5 €", p:-5, h:3, m:"Occasion = même plaisir, tiers du prix ! Et parfois des pièces déjà triées par d'autres…"}]},
+ {emoji:"🍕", titre:"Soirée pizza entre copains organisée !", desc:"Chacun apporte un ingrédient.",
+  opts:[
+   {i:"🧀", t:"Apporter le fromage", p:-4, h:3, m:"L'ingrédient roi ! Ta contribution sera dans chaque part : la gloire."},
+   {i:"🥖", t:"Faire la pâte maison", p:-1, h:3, m:"La pâte maison coûte presque rien et impressionne tout le monde !"},
+   {i:"🙈", t:"Venir les mains vides", p:0, h:-1, m:"Tu manges la pizza des autres… la prochaine fois, apporte ta part !"}]},
+ {emoji:"🌍", titre:"Projet solidaire de l'école !", desc:"Recolter des fonds pour une école au Maroc.",
+  opts:[
+   {i:"🏃", t:"Courir le sponsoring du 10 km", p:10, h:4, m:"Tes efforts se transforment en dons ! Sport + générosité = double victoire."},
+   {i:"💰", t:"Donner 5 € de ta tirelire", p:-5, h:4, m:"Donner SON argent à soi : la générosité au cube. Tu peux être fier."},
+   {i:"🚫", t:"Juste encourager", p:0, h:0, m:"Chacun participe comme il peut… mais même 1 € aurait aidé !"}]},
+
+ {emoji:"💌", titre:"La Saint-Valentin des copains !", desc:"Ta classe s'échange des petits mots doux.",
+  opts:[
+   {i:"✏️", t:"Dessiner 10 cartes maison", p:-2, h:3, m:"Cartes uniques pour 20 centimes pièce : artiste ET économe !"},
+   {i:"🍬", t:"Cartes + un bonbon chacune", p:-5, h:3, m:"Le combo gagnant ! Un petit surplus qui fait plaisir… sans vider la tirelire."},
+   {i:"🚫", t:"Ne rien faire", p:0, h:-1, m:"Personne ne t'en voudra… mais c'est mignon de participer !"}]},
+ {emoji:"🛠️", titre:"Ton vélo grince horriblement !", desc:"Et le frein arrière mord la roue.",
+  opts:[
+   {i:"🔧", t:"Le réparer avec papa + huiler", p:-3, h:3, m:"Un peu d'huile, un tour de clé : 3 € et un vélo comme neuf ! Apprendre à réparer = économiser à vie."},
+   {i:"🏪", t:"L'amener au magasin", p:-25, h:1, m:"Réparation pro : le confort de ne rien faire… pour 8 fois le prix de l'huile !"},
+   {i:"🚫", t:"Faire avec, ça roule quand même", p:0, h:-2, m:"Un frein qui mord s'use ET t'use toi ! La sécurité d'abord."}]},
+ {emoji:"🎽", titre:"Course sponsorisée de l'école !", desc:"1 € par tour promis par les parents du quartier.",
+  opts:[
+   {i:"🏃", t:"Enchaîner un maximum de tours", p:8, h:3, m:"8 tours, 8 € ! La sueur transformée en argent : le travail récompensé."},
+   {i:"🚶", t:"Courir tranquille pour le plaisir", p:3, h:2, m:"3 € et une belle balade : l'équilibre parfait entre effort et plaisir."},
+   {i:"🛋️", t:"Ne pas participer", p:0, h:-1, m:"Une journée sans courir… et sans gagner ! L'occasion ne reviendra pas."}]},
+ {emoji:"🍏", titre:"Marché aux fruits avec grand-mère !", desc:"Elle compare les prix étal par étal.",
+  opts:[
+   {i:"🧺", t:"L'aider à chercher les meilleures offres", p:0, h:3, m:"Observer, comparer : grand-mère t'apprend la chasse aux bons prix, un super-pouvoir !"},
+   {i:"🍬", t:"La supplier d'acheter des bonbons", p:-2, h:1, m:"Cédée par tendresse ! Mais les bonbons du marché coûtent deux fois ceux du supermarché…"},
+   {i:"😴", t:"Attendre en jouant", p:0, h:0, m:"Un marché, c'est long… mais tu rates une leçon d'économie en direct !"}]},
+ {emoji:"🎬", titre:"Le film tant attendu est au cinéma !", desc:"Séance de 20 h : 11 €. Séance de 14 h : 7 €.",
+  opts:[
+   {i:"☀️", t:"La séance de l'après-midi", p:-7, h:3, m:"Même film, même écran, 4 € de moins ! Choisir SON horaire = payer moins cher."},
+   {i:"🌙", t:"La séance du soir + pop-corn", p:-15, h:2, m:"L'expérience complète du soir… pour le double du prix. À réserver aux occasions !"},
+   {i:"⏳", t:"Attendre qu'il sorte en streaming", p:0, h:1, m:"Gratuit dans 3 mois ! Mais te priveras-tu des discussions de la récré demain ?"}]},
+ {emoji:"🎂", titre:"Anniversaire de ton cousin… à 300 km !", desc:"Le trajet coûte cher en train.",
+  opts:[
+   {i:"📞", t:"Un cadeau envoyé + appel vidéo", p:-12, h:2, m:"Le geste compte ! Un joli cadeau envoyé + un appel complice : l'essentiel est préservé."},
+   {i:"🚆", t:"Y aller avec tes économies partagées", p:-20, h:4, m:"Grosse dépense, grands souvenirs ! La famille vaut parfois l'investissement."},
+   {i:"💌", t:"Juste un message", p:0, h:0, m:"Le minimum syndical… un cousin mérite mieux !"}]},
+ {emoji:"☂️", titre:"La météo annonce une semaine de pluie !", desc:"Rentrée à pied sous les averses.",
+  opts:[
+   {i:"🥾", t:"Bottes + poncho : équipé total", p:-14, h:3, m:"Bien équipé = invincible ! Cet achat te servira des années : un vrai investissement."},
+   {i:"🧥", t:"Ta veste imperméable suffit", p:0, h:2, m:"Déjà dans ton placard : gratuit et efficace ! Pas besoin de plus."},
+   {i:"🌂", t:"Ignorer la météo, tu aimes ça", p:0, h:-2, m:"Une semaine trempé = rhume assuré = médecin = bien plus cher que les bottes !"}]},
+ {emoji:"🏆", titre:"Fin d'année : prix d'excellence possible !", desc:"Le lauréat gagne un bon d'achat de 20 €.",
+  opts:[
+   {i:"📚", t:"Réviser sérieusement toute la semaine", p:0, h:2, m:"Investir du temps pour gagner de l'argent : la stratégie des champions !"},
+   {i:"⚖️", t:"Réviser un peu, jouer un peu", p:0, h:1, m:"L'équilibre, c'est malin ! Pas de garantie de victoire, mais pas de sacrifice non plus."},
+   {i:"🎲", t:"Compter sur la chance", p:0, h:-1, m:"Sans préparation, la chance ne fait pas grand-chose… Le travail paie plus souvent !"}]},
+
+ {emoji:"🎨", titre:"Un atelier poterie s'ouvre au quartier !", desc:"15 € les 3 séances, matériel inclus.",
+  opts:[
+   {i:"🏺", t:"S'inscrire, c'est créatif !", p:-15, h:4, m:"Apprendre un savoir-faire : ça ne se gaspille jamais ! Et tu repars avec TES créations."},
+   {i:"📺", t:"Apprendre avec des vidéos", p:0, h:2, m:"Gratuit et efficace pour débuter ! Sans fourneau ni argile, mais l'esprit y est."},
+   {i:"🚫", t:"Passer, la terre ça salit", p:0, h:0, m:"La propreté d'abord ! Mais tu rates une belle expérience manuelle."}]},
+ {emoji:"🐝", titre:"Vente de miel du grand-père d'un copain !", desc:"Il cherche des petits vendeurs pour le marché.",
+  opts:[
+   {i:"🍯", t:"Tenir le stand une matinée", p:10, h:3, m:"Vendre, encaisser, rendre la monnaie : ta première expérience de commerce, PAYÉE !"},
+   {i:"🛒", t:"Acheter un pot pour maman", p:-6, h:2, m:"Cadeau utile et local ! Les produits artisanaux coûtent plus cher… mais quel goût !"},
+   {i:"🚫", t:"Filer au parc jouer", p:0, h:0, m:"Le parc, c'est bien aussi ! Mais 10 €, c'était un beau pactole…"}]},
+ {emoji:"🎲", titre:"Soirée jeux de société en famille !", desc:"Papa propose d'acheter le nouveau jeu à la mode.",
+  opts:[
+   {i:"📦", t:"Vérifier d'abord nos jeux actuels", p:0, h:2, m:"Redécouvrir ce qu'on a : souvent, un jeu oublié redevient passionnant !"},
+   {i:"🛒", t:"L'acheter : la soirée le réclame", p:-25, h:3, m:"Les soirées jeux en famille : inestimables… presque ! 25 € pour des années de fun."},
+   {i:"🔁", t:"L'emprunter à la ludothèque", p:-1, h:3, m:"LA solution maligne : tester avant d'acheter pour 1 € symbolique !"}]},
+
+
+ {emoji:"🌊", titre:"Sortie rafting proposée par le centre !", desc:"25 € l'après-midi, équipement fourni.",
+  opts:[
+   {i:"🚣", t:"Y aller avec tes économies", p:-25, h:4, m:"Une aventure inoubliable ! Certaines dépenses créent des souvenirs pour la vie."},
+   {i:"🐷", t:"Épargner pour l'année prochaine", p:0, h:2, m:"Patienter et viser plus grand : chaque euro compte pour ton objectif !"},
+   {i:"🤝", t:"Demander une participation des parents", p:-10, h:3, m:"Un partage équitable : tu paies 10 €, eux 15 ! Négocier, c'est adulte."}]},
+ {emoji:"🥁", titre:"L'école de musique recrute !", desc:"Essai gratuit ce samedi, puis 8 €/cours.",
+  opts:[
+   {i:"🎵", t:"Essayer le cours gratuit", p:0, h:3, m:"Tester gratuitement avant de s'engager : LE réflexe ! Tu sauras si la batterie t'appelle."},
+   {i:"📺", t:"Apprendre en autodidacte", p:-15, h:2, m:"Pad + baguettes : la méthode moderne et économique ! La motivation fera le reste."},
+   {i:"🚫", t:"Passer ton chemin", p:0, h:0, m:"La musique n'appelle pas tout le monde ! Il y a mille autres passions."}]},
+ {emoji:"🧊", titre:"Canicule : la clim de la maison tourne à fond !", desc:"Maman s'inquiète de la facture.",
+  opts:[
+   {i:"🌊", t:"Stratégie stores fermés + ventilateur", p:0, h:3, m:"Réfléchir avant de consommer : stores + ventilateur = 10 fois moins cher que la clim !"},
+   {i:"💸", t:"Continuer la clim à fond", p:0, h:-1, m:"Le confort total… mais la facture fond aussi tes économies de pocket money !"},
+   {i:"🌳", t:"S'installer sous l'arbre du jardin", p:0, h:2, m:"La clim' de la nature : gratuite et elle chante en plus !"}]},
+ {emoji:"📸", titre:"Le souvenir de l'année à imprimer !", desc:"Cette photo de classe où tu ris aux éclats.",
+  opts:[
+   {i:"🖼️", t:"Impression + cadre pour ta chambre", p:-9, h:3, m:"Rendre un souvenir physique : ça dure des années ! Un beau cadeau à soi-même."},
+   {i:"📱", t:"La garder sur le téléphone", p:0, h:1, m:"Gratuit et pratique… mais les télétons se perdent, les cadres restent !"},
+   {i:"🎨", t:"Cadre décoré main + photo", p:-4, h:4, m:"MOITIÉ prix et DEUX fois plus personnel : le combo gagnant du bricolage créatif !"}]},
+
+ {emoji:"🔭", titre:"Nuit des étoiles au village !", desc:"Télescopes proposés, mais la nuit sera froide.",
+  opts:[
+   {i:"⭐", t:"Y aller bien couvert", p:0, h:4, m:"Saturne en vrai ! Gratuit, magique et scientifique : la meilleure soirée de l'année."},
+   {i:"🧣", t:"Acheter un thermos + plaid neufs", p:-16, h:2, m:"Le confort optimal… mais ton vieil anorak aurait suffi !"},
+   {i:"😴", t:"Rester au chaud devant un documentaire", p:0, h:1, m:"Les étoiles en HD, c'est bien aussi… mais moins magique qu'en vrai !"}]},
+
+ {emoji:"🚲", titre:"Échange de vélo proposé au club !", desc:"Ton vieux vélo contre un plus grand, + 15 €.",
+  opts:[
+   {i:"🔄", t:"Faire l'échange", p:-15, h:3, m:"Ton vieux vélo repart, tu grandis : l'échange, c'est malin ! 15 € au lieu de 80 neufs."},
+   {i:"🔧", t:"Réviser le tien et garder encore un an", p:-5, h:2, m:"Entretenir au lieu de remplacer : l'école de la patience et de l'économie !"},
+   {i:"🛒", t:"Exiger un vélo neuf", p:-80, h:1, m:"Le neuf brille… mais 80 € ! Regarde ce que ça représente pour ta tirelire."}]},
+ {emoji:"🎭", titre:"Au musée : l'audioguide est payant !", desc:"5 € le guide, ou l'application gratuite du musée.",
+  opts:[
+   {i:"📱", t:"Utiliser l'appli gratuite du musée", p:0, h:3, m:"Même contenu, zéro euro : la technologie au service de ta tirelire !"},
+   {i:"🎧", t:"Prendre l'audioguide", p:-5, h:2, m:"Le confort du guide physique… mais 5 € pour la même histoire !"},
+   {i:"🏃", t:"Visiter en courant", p:0, h:0, m:"Les œuvres d'art méritent mieux qu'un sprint ! Prends le temps de regarder."}]},
+ {emoji:"🍊", titre:"Les oranges du marché sont en promo !", desc:"Filet de 5 kg à moitié prix : 3 €.",
+  opts:[
+   {i:"🧺", t:"En profiter avec tes parents", p:0, h:2, m:"Acheter quand c'est moins cher : le réflexe des familles futées !"},
+   {i:"🧃", t:"Acheter plutôt des jus tout prêts", p:-6, h:0, m:"Le jus en brique : 4 fois le prix du fruit, et bien moins bon pour la santé !"},
+   {i:"🚫", t:"Passer, tu n'aimes que les bonbons", p:0, h:-1, m:"Les fruits sont les bonbons de la nature… et bien moins chers au final !"}]},
+ {emoji:"🎪", titre:"Le cirque s'installe sur la place !", desc:"Le grand chapiteau fait rêver tout le quartier.",
+  opts:[
+   {i:"🎟️", t:"Une place avec tes économies", p:-14, h:4, m:"Les acrobates, les clowns, l'odorat de pop-corn : magique ! Certains plaisirs valent leur prix."},
+   {i:"📺", t:"Regarder le spectacle dehors gratuitement", p:0, h:2, m:"Assister au montage du chapiteau : un spectacle gratuit en soi !"},
+   {i:"🐷", t:"Épargner pour un plus grand projet", p:0, h:2, m:"Chaque cirque refusé rapproche ta console de 14 € ! Les priorités d'abord."}]},
+
+ {emoji:"🎹", titre:"Le piano du centre commercial t'appelle !", desc:"Personne ne regarde, la scène est libre.",
+  opts:[
+   {i:"🎵", t:"Jouer ton morceau préféré", p:0, h:3, m:"La musique partagée gratuitement : les passants sourient, ton cœur chante !"},
+   {i:"😬", t:"Trop timide, passer ton chemin", p:0, h:0, m:"Le trac, ça comprend ! Mais la prochaine fois, ose : le public est plus gentil qu'on croit."},
+   {i:"💰", t:"Demander des pièces aux passants", p:0, h:-2, m:"Jouer pour le plaisir : oui ! Jouer pour réclamer sans y avoir été invité : moyen…"}]},
+ {emoji:"🛍️", titre:"Le centre commercial avec les copains !", desc:"Ta bande flâne, chacun a 10 €.",
+  opts:[
+   {i:"🐷", t:"Rentrer avec tes 10 € intacts", p:0, h:3, m:"Résister aux tentations du centre commercial : l'épreuve suprême des épargnants ! Réussie !"},
+   {i:"🍟", t:"Partager des frites à quatre", p:-3, h:3, m:"10 € à quatre = frites pour tous ! La division, c'est l'amitié ET l'économie."},
+   {i:"🧢", t:"Une casquette flashée en vitrine", p:-12, h:1, m:"Acheter sous le coup de l'envie… tu la porteras combien de fois ? Réfléchis avant d'acheter !"}]},
+ {emoji:"📚", titre:"La bibliothèque propose un concours de lecture !", desc:"10 livres lus = un livre neuf offert.",
+  opts:[
+   {i:"📖", t:"Dévorer les 10 livres du concours", p:15, h:4, m:"Lecture + plaisir + livre neuf GRATUIT : le concours parfait ! Continuer comme ça."},
+   {i:"📖", t:"En lire la moitié", p:0, h:2, m:"5 livres, c'est déjà beau ! Mais le 6e t'aurait rapporté un livre…"},
+   {i:"📺", t:"Regarder les adaptations en film", p:0, h:0, m:"Les films sont bien… mais les livres ont mille détails en plus !"}]},
+ {emoji:"🥕", titre:"Grand-mère a trop préparé de soupe !", desc:"Elle te propose des plats pour la semaine.",
+  opts:[
+   {i:"🍲", t:"Accepter avec reconnaissance", p:0, h:3, m:"Des repas gratuits et faits avec amour : le jackpot secret des grands-mères !"},
+   {i:"🍕", t:"Préférer commander une pizza", p:-11, h:0, m:"La pizza vs la soupe de mamie : 11 € de différence ! Et la soupe est meilleure pour la santé…"},
+   {i:"😌", t:"Accepter mais juste un peu", p:0, h:1, m:"Un compromis poli ! Mais mamie avait préparé pour te faire plaisir…"}]},
+
+
+ {emoji:"🎸", titre:"Le groupe du quartier cherche un bassiste !", desc:"Répétition gratuite dans le garage de Lucas.",
+  opts:[
+   {i:"🎸", t:"Rejoindre les répétitions", p:0, h:4, m:"La musique en groupe : gratuite et formidable ! Certains plaisirs ne coûtent rien."},
+   {i:"🛒", t:"Acheter une basse neuve tout de suite", p:-120, h:2, m:"L'enthousiasme, c'est bien ! Mais essaie la basse prêtée du groupe avant d'investir…"},
+   {i:"🚫", t:"Refuser : trop de bruit", p:0, h:0, m:"Les bouchons d'oreilles existent ! Mais chacun ses plaisirs musicaux."}]},
+ {emoji:"🥧", titre:"Vente de tartes de l'association !", desc:"Pour le refuge animalier du village.",
+  opts:[
+   {i:"🥧", t:"En acheter une pour la famille", p:-4, h:3, m:"Dessert + bonne action : la dépense qui fait du bien autour de toi !"},
+   {i:"👩‍🍳", t:"En cuire et en donner trois", p:-3, h:4, m:"Cuire pour les autres : le bénévolat au four ! Ta tarte rapportera plus que son prix."},
+   {i:"🚫", t:"Passer ton chemin", p:0, h:0, m:"Aucune obligation ! Mais un petit geste aurait aidé le refuge."}]},
+ {emoji:"🚀", titre:"Fête de la science : construis ta fusée !", desc:"Concours de lancement samedi, kit à 6 € ou matériaux recyclés.",
+  opts:[
+   {i:"♻️", t:"Fusée 100 % matériaux récupérés", p:0, h:4, m:"Bouteille + carton + élan : ta fusée recycle ET décolle ! Le concours adore les créations récup."},
+   {i:"📦", t:"Kit officiel de la fusée", p:-6, h:2, m:"Le kit pro : précis et simple ! Mais la fusée recyclée a plus d'âme…"},
+   {i:"😴", t:"Ne pas participer", p:0, h:0, m:"Une fusée, ça ne se rate pas tous les samedis ! La prochaine occasion sera peut-être payante."}]},
+ {emoji:"🧤", titre:"Premier match de l'année au club !", desc:"Chaussettes et protège-tibias obligatoires.",
+  opts:[
+   {i:"🧦", t:"Récupérer ceux du grand frère", p:0, h:2, m:"L'héritage sportif de la famille : gratuit et déjà rodé !"},
+   {i:"🛒", t:"Acheter l'équipement neuf assorti", p:-22, h:2, m:"Au top de la mode sportive ! Mais les protège-tibias ne voient personne sous le short…"},
+   {i:"⚠️", t:"Jouer sans protège-tibias", p:0, h:-2, m:"Ouille ! Le règlement les exige pour ta sécurité : blessure = médecin = bien plus cher !"}]},
+ {emoji:"🎨", titre:"La fresque du quartier cherche des peintres !", desc:"Les enfants peuvent participer samedi.",
+  opts:[
+   {i:"🖌️", t:"Peindre une case de la fresque", p:0, h:4, m:"Ton art dans la rue pour toujours : gratuit, glorifiant, éternel !"},
+   {i:"🧢", t:"Voir les autres créer", p:0, h:1, m:"Spectateur inspiré ! Mais ton pinceau attendait son tour…"},
+   {i:"🛒", t:"Acheter tes propres bombes de peinture", p:-14, h:2, m:"Équipement de street artiste ! Mais la fresque fournit le matériel gratuitement…"}]},
+ {emoji:"🌦️", titre:"Samedi pluvieux : rien à faire dehors !", desc:"Le salon t'ennuie déjà.",
+  opts:[
+   {i:"🏰", t:"Construire un fort avec des draps", p:0, h:3, m:"Le meilleur des divertissements est GRATUIT ! Chaises, draps, imagination : le jackpot."},
+   {i:"📺", t:"Regarder des vidéos toute la journée", p:0, h:-1, m:"Trop d'écran = fatigue des yeux et de la tête. Le mix écran + jeu, c'est mieux !"},
+   {i:"🍪", t:"Cuisiner des cookies avec un parent", p:-3, h:3, m:"Apprendre à cuisiner : un investissement en goûters futurs ! Et l'odeur…"}]},
+ {emoji:"🧒", titre:"Ton petit frère veut jouer à TES jeux !", desc:"Il est petit et risque de les casser…",
+  opts:[
+   {i:"🧒", t:"Jouer avec lui à tes jeux simples", p:0, h:3, m:"Le grand frère généreux ! Il te suivra partout comme un fan."},
+   {i:"🚪", t:"Les cacher dans ta chambre", p:0, h:-1, m:"Le protéger c'est bien… le rejeter, c'est triste. Trouve un compromis !"},
+   {i:"🤲", t:"Lui prêter les jeux incassables", p:0, h:2, m:"Stratégie intelligente : les jeux solides pour lui, les fragiles pour toi !"}]},
+ {emoji:"🌟", titre:"Un copain te montre sa nouvelle montre connectée !", desc:"Elle compte les pas, l'heure, tout…",
+  opts:[
+   {i:"🤩", t:"Demander la même à tes parents", p:-35, h:1, m:"Le syndrome « moi aussi je veux » ! 35 € pour compter des pas… réfléchis !"},
+   {i:"⌚", t:"Utiliser ta vieille montre à aiguilles", p:0, h:2, m:"Une montre, ça donne l'heure. Point. Le reste, c'est du marketing !"},
+   {i:"🏃", t:"Courir plus, montre ou pas", p:0, h:2, m:"Le sport gratuit bat la technologie payante ! Continue comme ça."}]},
+ {emoji:"🚿", titre:"Tes parents lancent un défi eau : 5 minutes de douche max !", desc:"1 € économisé par semaine sur la facture.",
+  opts:[
+   {i:"⏱️", t:"Relever le défi à fond", p:5, h:3, m:"Récompense méritée ! Tu économises l'eau, la planète te dit merci, et ton portefeuille aussi."},
+   {i:"🎵", t:"Une chanson pour chronométrer", p:0, h:2, m:"La méthode des pros : ta chanson préférée mesure le temps GRATUITEMENT !"},
+   {i:"🛁", t:"Rester 20 minutes dans l'eau chaude", p:0, h:-1, m:"Le chaud du bain… contre le froid de la facture !"}]},
+ {emoji:"🍕", titre:"Le pizzaiolo s'est trompé : une pizza en trop !", desc:"Il te la propose gentiment, toute chaude.",
+  opts:[
+   {i:"🍕", t:"La partager avec ta famille", p:0, h:3, m:"Partager un cadeau de la vie, c'est gratuit et ça fait des heureux autour de la table !"},
+   {i:"🏠", t:"La garder pour toi", p:0, h:0, m:"Pas faux… mais imagine les sourires si tu la partagais."},
+   {i:"🗑️", t:"La jeter", p:0, h:-2, m:"Gaspiller de la nourriture, c'est jeter de l'argent ET du plaisir."}]},
+ {emoji:"🎈", titre:"Tu as un peu peur du noir la nuit…", desc:"Une veilleuse te ferait du bien.",
+  opts:[
+   {i:"🌟", t:"Acheter une jolie veilleuse", p:-10, h:3, m:"Ton bien-être compte ! Dépenser pour mieux dormir, c'est de l'argent bien utilisé."},
+   {i:"🔦", t:"Utiliser ta lampe de poche", p:-2, h:1, m:"Débrouillard ! Problème réglé pour presque rien."},
+   {i:"🚪", t:"Dormir avec la lumière du couloir", p:0, h:-1, m:"Gratuit… mais l'interrupteur des parents n'est pas ta veilleuse."}]},
+
+ {emoji:"🔑", titre:"Tu as perdu ta clé de la maison… encore !", desc:"C'est la deuxième fois ce mois-ci.",
+  opts:[
+   {i:"🔍", t:"La chercher calmement", p:0, h:1, m:"Prendre le temps de chercher au lieu de paniquer : c'est ça, être responsable."},
+   {i:"🧰", t:"Appeler un serrurier", p:-60, h:-1, m:"60 € ! Une clé perdue coûte très cher quand on n'est pas organisé."},
+   {i:"🔐", t:"Acheter une boîte à clés avec code", p:-15, h:2, m:"Investir une fois pour ne plus jamais refaire l'erreur : très intelligent."}]},
+ {emoji:"🎾", titre:"Le club de tennis fait une promo !", desc:"-50 % sur le trimestre, mais seulement si tu t'inscris aujourd'hui.",
+  opts:[
+   {i:"🎾", t:"S'inscrire tout de suite", p:-30, h:3, m:"Le sport, c'est la santé ET le fun. Et tu as payé moitié prix : bien vu !"},
+   {i:"🤔", t:"Réfléchir encore un peu", p:0, h:0, m:"Réfléchir, c'est bien… mais les promos n'attendent pas. Décider vite, c'est aussi une compétence."},
+   {i:"⏭️", t:"Passer son tour", p:0, h:-1, m:"Peut-être une occasion manquée… la prochaine fois, tu sauras."}]},
+ {emoji:"🎨", titre:"Concours de dessin à l'école !", desc:"Le gagnant remporte 15 €.",
+  opts:[
+   {i:"🖌️", t:"Participer à fond", p:0, h:2, m:"Participer, c'est déjà gagner. Et si tu gagnes : 15 € mérités !"},
+   {i:"🤝", t:"Participer avec un ami", p:0, h:2, m:"À deux, c'est plus motivant — et les idées fusent !"},
+   {i:"🙈", t:"Ne pas participer", p:0, h:-1, m:"Sans risque, sans récompense… ose parfois !"}]},
+ {emoji:"🐹", titre:"Ton hamster n'a plus de nourriture !", desc:"Un animal, ça dépend entièrement de toi.",
+  opts:[
+   {i:"🌾", t:"Acheter sa nourriture tout de suite", p:-4, h:2, m:"Un animal de compagnie, c'est une responsabilité : bien joué."},
+   {i:"🥕", t:"Donner des restes de légumes en attendant", p:0, h:1, m:"Dépannage malin — mais pense à racheter sa nourriture rapidement."},
+   {i:"⏳", t:"Attendre la prochaine fois", p:0, h:-2, m:"Un animal ne peut pas attendre ! Adopter un animal, c'est s'occuper de lui AVANT tout."}]},
+ {emoji:"🎧", titre:"Ton casque audio ne marche plus d'un côté !", desc:"La musique ne passe plus qu'à droite…",
+  opts:[
+   {i:"🧾", t:"Vérifier la garantie et le faire réparer", p:0, h:2, m:"Malin ! La garantie existe pour ça — vérifier avant de dépenser, c'est le réflexe pro."},
+   {i:"🛒", t:"En racheter un neuf", p:-25, h:0, m:"Ça marche… mais tu as peut-être dépensé pour rien si la garantie couvrait !"},
+   {i:"🔩", t:"Essayer de le réparer toi-même", p:-2, h:2, m:"Débrouillard niveau expert ! Parfois on y arrive, et on apprend toujours."}]},
+ {emoji:"🏃", titre:"Le glacier lance un défi : 1 km de course pour une glace gratuite !", desc:"Tu viens justement de faire du sport…",
+  opts:[
+   {i:"🏃", t:"Relever le défi !", p:0, h:3, m:"Un peu d'effort pour une glace gratuite : le sport ET la récompense. Parfait !"},
+   {i:"🛋️", t:"Acheter une glace tranquille", p:-3, h:1, m:"3 € pour éviter l'effort… ton portefeuille aurait préféré la course !"},
+   {i:"💧", t:"Boire de l'eau et rentrer", p:0, h:0, m:"Sage ! Tu gardes ton argent et ta santé."}]},
+ {emoji:"🎈", titre:"Deux anniversaires le même jour : tes DEUX meilleurs amis !", desc:"Une seule après-midi de libre…",
+  opts:[
+   {i:"⚡", t:"Faire un coucou aux deux avec deux petits cadeaux", p:-6, h:3, m:"Organisé et généreux : deux amis heureux pour moins cher qu'un gros cadeau !"},
+   {i:"🎯", t:"Choisir un seul anniversaire", p:-3, h:1, m:"Choisir, c'est renoncer… l'ami écarté risque d'être déçu."},
+   {i:"🙅", t:"Aucun des deux", p:0, h:-2, m:"Tes amis comptent pour toi, non ?"}]},
+ {emoji:"🌱", titre:"Tes parents te proposent de cultiver des fraises au jardin !", desc:"Graines : 5 €. Première récolte dans 2 mois.",
+  opts:[
+   {i:"🌱", t:"Planter et t'en occuper", p:-5, h:2, m:"Investir du temps et un peu d'argent pour une récolte : ça, c'est un investissement !"},
+   {i:"🛒", t:"Acheter des fraises au magasin quand tu en veux", p:0, h:0, m:"Pratique… mais les fraises du jardin coûtent presque rien à chaque récolte !"},
+   {i:"🚫", t:"Laisser le jardin tranquille", p:0, h:0, m:"Le jardinage ne plaît pas à tout le monde — et c'est OK aussi."}]},
+ {emoji:"💸", titre:"Un ami te demande de lui prêter 10 €", desc:"Il promet de te les rendre la semaine prochaine.",
+  opts:[
+   {i:"🤝", t:"Prêter, en confiance", p:-10, h:1, m:"Aider un ami, c'est noble… mais écris-toi un petit rappel ! Les prêts entre amis, ça se gère sérieusement."},
+   {i:"🧾", t:"Prêter seulement la moitié", p:-5, h:2, m:"Compromis malin : tu aides, sans tout risquer."},
+   {i:"🙃", t:"Refuser gentiment", p:0, h:0, m:"Dire non sans se fâcher, c'est une compétence d'adulte. Bien joué."}]},
+ {emoji:"🧁", titre:"La boulangerie soldes ses gâteaux de la veille -50 % !", desc:"Encore très bons, deux fois moins chers.",
+  opts:[
+   {i:"🧁", t:"En prendre pour le goûter de demain", p:-2, h:2, m:"Acheter malin : la même douceur, moitié prix. Les soldes sont tes amies !"},
+   {i:"🆕", t:"Attendre un gâteau frais", p:-4, h:1, m:"Le frais a ses avantages — mais payer deux fois plus pour le même plaisir…"},
+   {i:"🚫", t:"Ne rien acheter", p:0, h:0, m:"Économie totale ! Ton portefeuille dit merci."}]},
+ {emoji:"🌦️", titre:"Un camarade a oublié son goûter !", desc:"Il regarde les autres manger avec des yeux tristes.",
+  opts:[
+   {i:"🥪", t:"Partager la moitié de ton goûter", p:0, h:3, m:"Partager, c'est doubler le plaisir ! Ton goûter a meilleur goût quand il est partagé."},
+   {i:"🍬", t:"Lui donner un bonbon de secours", p:0, h:2, m:"Un petit geste qui fait grand effet ! Les copains se souviennent de la gentillesse."},
+   {i:"🙈", t:"Finir ton goûter sans rien dire", p:0, h:-1, m:"Ce n'est pas ton rôle de le nourrir… mais un sourire de plus ne coûte rien !"}]},
+ {emoji:"🛹", titre:"Le skate de ton copain t'impressionne !", desc:"Tu veux le même, tout de suite.",
+  opts:[
+   {i:"⏳", t:"Économiser patiemment mois après mois", p:0, h:3, m:"Chaque semaine épargnée, tu te rapproches ! Les grandes envies apprennent la patience."},
+   {i:"🛒", t:"Demander à tes parents de l'avancer", p:0, h:0, m:"Ils avanceront peut-être… mais tu devras rembourser : un crédit, ça se réfléchit !"},
+   {i:"🤝", t:"Essayer le sien pour voir si tu aimes vraiment", p:0, h:2, m:"Tester avant d'acheter : le réflexe malin ! Parfois on rêve d'un truc qu'on n'utilise pas."}]},
+ {emoji:"🧊", titre:"La cantine change de fournisseur : les prix montent !", desc:"Les parents s'inquiètent un peu de la facture.",
+  opts:[
+   {i:"🥪", t:"Proposer des jours pique-nique maison", p:-2, h:3, m:"Solution maline ! Tu participes aux économies du foyer ET tu manges ce que tu aimes."},
+   {i:"😋", t:"Continuer à la cantine comme avant", p:0, h:1, m:"C'est le choix du confort ! Mais discutes-en en famille : tout le monde peut proposer."},
+   {i:"🚫", t:"Sauter le déjeuner pour économiser", p:0, h:-2, m:"JAMAIS sur la santé ! Bien manger fait grandir, apprendre et jouer."}]},
+ {emoji:"🐦", titre:"Un oisillon est tombé du nid !", desc:"Il tremble au pied de l'arbre.",
+  opts:[
+   {i:"🐾", t:"Prévenir le centre de soins des animaux", p:0, h:3, m:"Le bon réflexe ! Les pros savent s'en occuper — toi, tu lui as sauvé la vie."},
+   {i:"🧢", t:"Le remonter au nid avec un gant", p:0, h:2, m:"Gentil et prudent ! (Avec les parents autour, pour la sécurité.)"},
+   {i:"👀", t:"Partir en pensant que c'est la nature", p:0, h:-1, m:"La nature est dure… mais un geste simple aurait pu suffire."}]},
+ {emoji:"🏆", titre:"Ton équipe de foot gagne la finale !", desc:"Le club propose les maillots commemoratifs à 20 €.",
+  opts:[
+   {i:"👕", t:"Acheter le maillot souvenir", p:-20, h:3, m:"Un maillot de champion, pour toujours ! Une dépense souvenir assumée — bien joué la saison !"},
+   {i:"📸", t:"Une photo d'équipe gratuite", p:0, h:3, m:"La photo gratuite vaut de l'or des souvenirs ! Le maillot s'abîmera, la photo jamais."},
+   {i:"🐷", t:"Garder tes économies", p:0, h:1, m:"La victoire est dans ton cœur, pas dans le maillot ! Ta tirelire t'approuve."}]},
+ {emoji:"🍞", titre:"Tu veux apprendre à faire le pain comme le boulanger !", desc:"Un stage d'une matinée est proposé : 10 €.",
+  opts:[
+   {i:"🥖", t:"S'inscrire au stage", p:-10, h:4, m:"Un savoir-faire pour la vie pour 10 € : l'investissement le plus rentable du monde !"},
+   {i:"👀", t:"Demander à regarder gratuitement", p:0, h:2, m:"Observer, c'est déjà apprendre ! Et parfois le boulanger te fera goûter."},
+   {i:"🛒", t:"Continuer à acheter ton pain", p:0, h:0, m:"Le pain acheté est bon… mais celui qu'on fait soi-même a un goût de victoire !"}]},
+ {emoji:"🔊", titre:"Ta chambre est bruyante : les voisins font des travaux !", desc:"Difficile de se concentrer pour les devoirs.",
+  opts:[
+   {i:"🎧", t:"Écouter de la musique calme avec des écouteurs", p:0, h:3, m:"Solution gratuite et efficace ! Ton cerveau te dira merci."},
+   {i:"🏢", t:"Aller étudier à la bibliothèque", p:0, h:3, m:"La bibliothèque : le bureau gratuit de tout le monde ! Silence et concentration inclus."},
+   {i:"😤", t:"Se plaindre aux voisins", p:0, h:0, m:"Les travaux sont légaux en journée… Ta concentration, elle, dépend de TOI !"}]},
+ {emoji:"🍓", titre:"Tes fraises du jardin sont prêtes !", desc:"Panier plein : bien plus que ce que tu peux manger.",
+  opts:[
+   {i:"🧺", t:"Les vendre au marché avec papa", p:7, h:3, m:"Le jardin qui rapporte ! 7 € de récolte vendue : voilà le travail qui paie."},
+   {i:"🤝", t:"En offrir aux voisins", p:0, h:3, m:"Générosité fraîcheur : les voisins t'adoreront (et te le rendront !)."},
+   {i:"🗑️", t:"Les laisser pourrir", p:0, h:-2, m:"Gaspiller une récolte, c'est jeter le travail et l'argent des graines !"}]},
+
+ {emoji:"🪁", titre:"Grand vent aujourd'hui : jour de cerf-volant !", desc:"Tu peux en fabriquer un ou en acheter un.",
+  opts:[
+   {i:"🪁", t:"Le fabriquer avec un sac plastique", p:0, h:4, m:"Un sac, deux baguettes, de la ficelle : ton cerf-volant vole ! La créativité est gratuite."},
+   {i:"🛒", t:"Un super cerf-volant neuf", p:-12, h:2, m:"Il vole haut et bien ! Mais le sac plastique vole aussi, lui… gratuitement."},
+   {i:"🏠", t:"Regarder les autres voler", p:0, h:-1, m:"Le vent ne durera pas ! Profite des occasions quand elles se présentent."}]},
+ {emoji:"🧦", titre:"Perte au foot : le maillot d'un copain !", desc:"Tu l'avais emprunté pour l'entraînement.",
+  opts:[
+   {i:"🤝", t:"L'avouer et proposer de le remplacer", p:-18, h:3, m:"Coûteux mais honnête ! Ta réputation de quelqu'un de fiable vaut plus que 18 €."},
+   {i:"🔍", t:"Retourner chercher partout", p:0, h:2, m:"Un dernier tour des vestiaires : parfois les choses réapparaissent !"},
+   {i:"🙈", t:"Ne rien dire", p:0, h:-2, m:"Ton copain découvrira la vérité… et perdra confiance en toi. La confiance, ça ne se rachète pas."}]},
+ {emoji:"🥞", titre:"Brunch de fête des mères !", desc:"Tu veux gâter maman ce dimanche.",
+  opts:[
+   {i:"👩‍🍳", t:"Préparer crêpes + jus de fruits", p:-5, h:4, m:"Le brunch maison : 3 fois moins cher qu'au restaurant ET fait avec amour. Maman fond."},
+   {i:"🥐", t:"Acheter viennoiseries du boulanger", p:-9, h:3, m:"Délicieux et zéro travail ! Le boulanger fait bien les choses… à son prix."},
+   {i:"💕", t:"Un gros câlin et un poème", p:0, h:3, m:"Le cadeau préféré des mamans : gratuit, indestructible, inestimable !"}]},
+
+ {emoji:"🎯", titre:"Vide-grenier du quartier !", desc:"Ton vieux coffre de jouets peut intéresser quelqu'un.",
+  opts:[
+   {i:"📦", t:"Vendre tes vieux jouets", p:12, h:3, m:"Ta tirelire gagne 12 € ET tes jouets font des heureux : le commerce circulaire !"},
+   {i:"🛒", t:"Acheter des jeux d'occasion", p:-6, h:2, m:"Acheter d'occasion : le secret des acheteurs malins ! 70 % de réduction en moyenne."},
+   {i:"🛋️", t:"Rester à la maison", p:0, h:0, m:"Dompter la sieste du dimanche : un choix honorable aussi !"}]},
+ {emoji:"🥤", titre:"Le distributeur de la piscine te nargue !", desc:"Après 1 h de nage, tu as une soif de dingue.",
+  opts:[
+   {i:"💧", t:"Ta gourde dans le sac", p:0, h:2, m:"Pensée de champion ! Ta gourde t'attend : gratuite, écologique et toujours là."},
+   {i:"🧃", t:"Un jus au distributeur", p:-2, h:1, m:"2 € le jus : le prix du confort. À 3 piscines par mois, ça fait 72 € par an !"},
+   {i:"🚰", t:"La fontaine à eau", p:0, h:1, m:"Gratuit et hydratant : le choix discret mais parfait !"}]},
+ {emoji:"🍋", titre:"Stand de limonade : l'idée du siècle ?", desc:"Les passants ont soif, le soleil tape.",
+  opts:[
+   {i:"🍋", t:"Acheter les ingrédients et vendre 30 verres", p:12, h:4, m:"5 € d'ingrédients, 17 € de recettes : 12 € de bénéfice ! Voilà le commerce !"},
+   {i:"🤝", t:"Le faire avec ton petit frère (partage 50/50)", p:6, h:4, m:"L'entraide paie ! 6 € chacun et un souvenir d'équipe inestimable."},
+   {i:"🛋️", t:"Trop compliqué, abandonner", p:0, h:0, m:"Vente annulée… mais l'idée était en or ! Ose la prochaine fois."}]},
+ {emoji:"🎯", titre:"Le forfait tir à l'arc du centre !", desc:"10 € les 3 séances d'essai ce mois-ci.",
+  opts:[
+   {i:"🏹", t:"S'inscrire aux séances d'essai", p:-10, h:4, m:"Robin des Bois en puissance ! Découvrir une passion pour 10 € : une belle porte d'entrée."},
+   {i:"🤝", t:"Partager le forfait avec ta soeur", p:-5, h:3, m:"À deux, on découvre deux fois plus de sports pour le même prix global !"},
+   {i:"🏹", t:"Fabriquer un arc en branches", p:0, h:2, m:"L'arc des bricoleurs ! Gratuit, créatif… et précis à 2 mètres près. 😄"}]},
+ {emoji:"🍉", titre:"Kermesse de l'école : stand de pastèque !", desc:"Tu peux tenir le stand une heure.",
+  opts:[
+   {i:"🍉", t:"Tenir le stand bénévolement", p:3, h:4, m:"Bénévolat récompensé de 3 € ! Aider l'école ET gagner : l'altruisme paie aussi."},
+   {i:"🍉", t:"Manger deux parts au stand", p:-4, h:2, m:"Fraîche et juteuse… mais vendre au lieu d'acheter, c'était plus malin !"},
+   {i:"🏠", t:"Rester à la maison", p:0, h:0, m:"La kermesse, c'est une fois par an ! Tu y penseras l'année prochaine."}]},
+ {emoji:"🚨", titre:"Alerte : le hamster de la classe s'est échappé !", desc:"Récompense de 5 € pour qui le retrouve.",
+  opts:[
+   {i:"🔦", t:"Chercher partout avec ta lampe", p:5, h:4, m:"Trouvé derrière la bibliothèque ! 5 € de récompense et le héros du jour : complet !"},
+   {i:"🥕", t:"Poser un piège à carotte", p:0, h:3, m:"Astucieux ! Le hamster viendra tout seul… mais un autre le trouvera peut-être avant."},
+   {i:"🛋️", t:"Laisser les autres chercher", p:0, h:0, m:"Et si tout le monde regardait ailleurs ? La récompense n'attend pas !"}]},
+ {emoji:"🧦", titre:"La journée pyjama est lancée à l'école !", desc:"Tout le monde vient en pyjama demain.",
+  opts:[
+   {i:"🧸", t:"Vendre des tickets pyjama pour l'école", p:3, h:3, m:"Transformer la journée en mini-kermesse : ta classe finance sa sortie !"},
+   {i:"😴", t:"Y aller en pyjama simplement", p:0, h:2, m:"La journée la plus confortable de l'année, gratuite !"},
+   {i:"👖", t:"Venir habillé normalement", p:0, h:-1, m:"Tu rates LA journée fun de l'année pour un pyjama déjà prêt !"}]},
+ {emoji:"🍦", titre:"La glace que tu as achetée fond au soleil !", desc:"Tu marches lentement… très lentement.",
+  opts:[
+   {i:"🏃", t:"Marcher plus vite et la sauver", p:0, h:2, m:"Réflexe gagnant ! Protéger un achat, c'est respecter son argent."},
+   {i:"🥄", t:"La manger tout de suite", p:0, h:2, m:"Priorité survie de la glace : décision de chef !"},
+   {i:"💧", t:"La laisser fondre", p:0, h:-2, m:"Une glace perdue, c'est l'argent qui coule entre les doigts !"}]},
+ {emoji:"⛸️", titre:"La patinoire éphémère ouvre sur la place !", desc:"Location de patins : 6 € l'heure.",
+  opts:[
+   {i:"⛸️", t:"Tester une heure", p:-6, h:3, m:"Découvrir un sport pour 6 € : si ça te plaît, tu sauras quoi demander à Noël !"},
+   {i:"🧤", t:"Regarder les patineurs depuis le bord", p:0, h:1, m:"Spectateur prudent ! Mais tu n'apprends pas à patiner en regardant…"},
+   {i:"🚫", t:"Attendre l'hiver prochain", p:0, h:-1, m:"La patinoire ne reste qu'un mois ! Mais c'est ton choix."}]},
+ {emoji:"🗓️", titre:"Ton anniversaire approche : la liste de cadeaux !", desc:"Ta famille demande ce qui te ferait plaisir.",
+  opts:[
+   {i:"🎯", t:"Demander de l'argent pour TON objectif", p:0, h:3, m:"Intelligent ! Chaque euro reçu accélère ton projet. Les adultes respectent ça."},
+   {i:"🎁", t:"Demander plusieurs petits cadeaux", p:0, h:2, m:"Diversifier les surprises : plus de paquets à ouvrir, plus de fun !"},
+   {i:"🤷", t:"« Je ne sais pas… »", p:0, h:0, m:"Ne pas savoir, c'est risquer de recevoir des choses qui ne t'intéressent pas !"}]},
+ {emoji:"🚰", titre:"Le robinet du jardin goutte sans arrêt !", desc:"Goutte après goutte, depuis des jours.",
+  opts:[
+   {i:"🔧", t:"Le signaler et proposer de le serrer", p:1, h:3, m:"Un robinet qui goutte = des litres d'eau et des euros perdus ! Tu viens d'économiser le foyer."},
+   {i:"👂", t:"Le signaler sans agir", p:0, h:1, m:"Bien de prévenir… mais tu pouvais le serrer toi-même en 30 secondes !"},
+   {i:"🚿", t:"L'ignorer complètement", p:0, h:-1, m:"Goutte après goutte, c'est une facture qui monte et une rivière gaspillée !"}]},
+ {emoji:"🎒", titre:"Sac trop lourd : ton dos souffre !", desc:"Tu portes 8 kg tous les jours.",
+  opts:[
+   {i:"📚", t:"Trier : ne prendre que l'indispensable", p:0, h:3, m:"Organiser son sac, c'est organiser sa journée ! Ton dos te remercie."},
+   {i:"🛒", t:"Acheter un sac à roulettes", p:-25, h:2, m:"Confort total ! Mais avant d'acheter, TRIE ton sac : souvent la moitié est inutile."},
+   {i:"💪", t:"Continuer à tout porter", p:0, h:-2, m:"Ton dos grandit en même temps que toi ! Le mal de dos n'est pas une fierté."}]},
+ {emoji:"🤐", titre:"Ton copain te confie son secret le plus précieux !", desc:"Il te fait confiance depuis toujours.",
+  opts:[
+   {i:"🤐", t:"Garder son secret, pour toujours", p:0, h:3, m:"Garder un secret, c'est le cadeau invisible de l'amitié ! Il a eu raison de te faire confiance."},
+   {i:"🗣️", t:"Le raconter à un autre copain", p:0, h:-3, m:"Un secret raconté est un secret perdu… et une amitié abîmée. Ça ne se rachète pas !"},
+   {i:"🤫", t:"En parler à tes parents pour te décharger", p:0, h:1, m:"Demander conseil à un adulte quand ça pèse trop : sage et responsable !"}]},
+ {emoji:"🎁", titre:"Noël : la famille propose un SECRET SANTA !", desc:"Un cadeau chacun, budget 10 € max, tirage au sort.",
+  opts:[
+   {i:"🎨", t:"Préparer un cadeau personnalisé fait main", p:-4, h:4, m:"Le cadeau fait main pour TON tirage : toujours le plus touchant, pour presque rien !"},
+   {i:"🛒", t:"Acheter le cadeau au max du budget", p:-10, h:2, m:"Le budget respecté à la lettre : régulier, mais on peut souvent faire aussi bien pour moins."},
+   {i:"🙈", t:"Acheter n'importe quoi à la va-vite", p:-7, h:0, m:"7 € pour un cadeau sans âme… 4 minutes de réflexion auraient suffi !"}]},
+ {emoji:"🍪", titre:"Tes cousins mangent TOUS les biscuits du paquet !", desc:"Le paquet était censé durer la semaine.",
+  opts:[
+   {i:"🧮", t:"Diviser le paquet en parts égales", p:0, h:3, m:"Diviser pour régner ! Chacun sa part, plus rien à voler, plus de disputes."},
+   {i:"😡", t:"Crier qu'ils ont tout mangé", p:0, h:-1, m:"Compris, mais la colère ne fait pas revenir les biscuits ! La solution est dans la répartition."},
+   {i:"🛒", t:"Racheter un nouveau paquet", p:-4, h:0, m:"4 € pour compenser leur appétit ? Le prochain paquet sera mieux gardé !"}]},
+ {emoji:"📖", titre:"Ta copine te prête son livre préféré de la série !", desc:"Le tome 3 que tu rêvais de lire.",
+  opts:[
+   {i:"📚", t:"Le lire soigneusement et le rendre vite", p:0, h:3, m:"Soigner les prêts, c'est garantir les suivants ! Elle te prêtera le tome 4 sans hésiter."},
+   {i:"🖌️", t:"Écrire ton nom dedans", p:0, h:-2, m:"C'est LE LIVRE DE TA COPINE ! Écrire dedans = abîmer = confiance brisée."},
+   {i:"🛋️", t:"Le garder des mois sans le lire", p:0, h:-1, m:"Un prêt oublié est un prêt volé… et elle ne te prêtera plus jamais rien !"}]},
+ {emoji:"🚲", titre:"Ta roue avant grince à chaque tour de pédale !", desc:"Un bruit de grincement de dents.",
+  opts:[
+   {i:"🛢️", t:"L'huiler toi-même avec papa", p:-2, h:3, m:"2 € d'huile et une leçon de mécanique : le vélo est comme neuf !"},
+   {i:"🏪", t:"Atelier vélo professionnel", p:-18, h:1, m:"Réparé parfaitement… mais 18 € pour une chaîne qui grince, c'est beaucoup !"},
+   {i:"🎧", t:"Mettre des écouteurs et ignorer", p:0, h:-2, m:"Le grincement s'aggrave en silence… et la réparation urgente coûte triple !"}]},
+ {emoji:"🎭", titre:"Ton cousin copie TOUS tes styles !", desc:"Même coupe, même sneakers, même sac…",
+  opts:[
+   {i:"😎", t:"En être fier : tu es un exemple !", p:0, h:3, m:"Quand on te copie, c'est que tu es une référence ! Prends-le comme un compliment."},
+   {i:"😤", t:"Lui interdire de te copier", p:0, h:-1, m:"L'imiter, c'est te trouver cool ! Le rejeter blesserait votre amitié."},
+   {i:"🎨", t:"Inventer un style ensemble", p:0, h:3, m:"Créer un style à DEUX : personne ne pourra plus vous copier séparément !"}]},
+ {emoji:"🛏️", titre:"Déménagement : ta chambre sera plus petite !", desc:"Il faut choisir ce qu'on garde.",
+  opts:[
+   {i:"📦", t:"Trier : garder, donner, vendre", p:15, h:3, m:"Le tri qui rapporte ! Tu gagnes de la place ET de l'argent pour ta nouvelle chambre."},
+   {i:"🗑️", t:"Tout jeter dans des sacs poubelle", p:0, h:-1, m:"Jeter, c'est perdre deux fois : l'objet ET sa valeur ! Trie avant de jeter."},
+   {i:"😱", t:"Tout garder et dormir entre les cartons", p:0, h:0, m:"Tu ne pourras pas ouvrir la fenêtre pendant 6 mois. 😅"}]},
+ {emoji:"🧃", titre:"La foire aux jus de fruits frais !", desc:"Le jus fraîchement pressé est à 4 € le verre.",
+  opts:[
+   {i:"🧃", t:"Un verre pour te faire plaisir", p:-4, h:2, m:"Une gourmandise de temps en temps : c'est ça, savourer l'argent intelligemment !"},
+   {i:"🍊", t:"Acheter 2 kg d'oranges et les presser", p:-3, h:3, m:"3 € = TROIS verres maison ! Le presse-agrumes, ton nouvel allié argent."},
+   {i:"💧", t:"Boire de l'eau", p:0, h:1, m:"La soif de l'eau se calme gratuitement : le choix des sages !"}]},
+ {emoji:"🐻", titre:"Ton doudou de toujours a perdu son œil !", desc:"Il te suit depuis toujours…",
+  opts:[
+   {i:"🪡", t:"Le recoudre avec maman", p:0, h:4, m:"Un œil neuf cousu avec amour : ton doudou est sauvé, GRATUITEMENT ! Et le moment partagé…"},
+   {i:"🛒", t:"En acheter un neuf identique", p:-15, h:0, m:"Le nouveau ne sent pas pareil, ne se love pas pareil… L'ancien est irremplaçable !"},
+   {i:"🎀", t:"Lui mettre un bandeau style pirate", p:0, h:3, m:"Le doudou PIRATE : encore plus stylé qu'avant, pour 0 € !"}]},
+];
+
+const BOUTIQUE = [
+ {e:"🍦", n:"Glace", p:2, h:1},
+ {e:"🧁", n:"Cupcake", p:3, h:1},
+ {e:"📚", n:"BD", p:8, h:2},
+ {e:"🧢", n:"Casquette cool", p:12, h:2},
+ {e:"🚀", n:"Maquette fusée", p:25, h:3},
+ {e:"🎧", n:"Écouteurs", p:30, h:3},
+];
+
+const MISSIONS_POOL = [
+ {e:"🛏️", n:"Faire ton lit", e2:1, h:1},
+ {e:"🦷", n:"Te brosser les dents matin et soir", e2:1, h:1},
+ {e:"📚", n:"Lire 20 minutes", e2:2, h:1},
+ {e:"🍽️", n:"Mettre et débarrasser la table", e2:2, h:1},
+ {e:"🎒", n:"Préparer ton sac pour demain", e2:1, h:1},
+ {e:"🧦", n:"Ranger tes affaires", e2:1, h:1},
+ {e:"📝", n:"Faire tes devoirs sans rappeler", e2:2, h:1},
+ {e:"🌱", n:"Arroser les plantes", e2:1, h:1},
+ {e:"🧺", n:"Plier ton linge propre", e2:1, h:1},
+ {e:"🥗", n:"Aider à préparer le dîner", e2:2, h:1},
+ {e:"🚿", n:"Être prêt à l'heure le matin", e2:1, h:1},
+ {e:"🐾", n:"S'occuper de l'animal de la maison", e2:2, h:1},
+];
+
+const POCHE_QUOTIDIENNE = 2;
+const CARTES_PAR_JOUR = 30;
+const MISSIONS_PAR_JOUR = 4;
+
+const OBJECTIFS = [
+ {o:"Cadeaux", c:50, e:"🎁"},
+ {o:"Écouteurs", c:30, e:"🎧"},
+ {o:"Skateboard", c:60, e:"🛹"},
+ {o:"Nouveau vélo", c:80, e:"🚲"},
+ {o:"Guitare", c:90, e:"🎸"},
+ {o:"Console", c:120, e:"🎮"},
+];
+
+const AVATARS_JEU = ["🧒","👧","🦸","🧙","🤖","🦖"];
+
+/* ============================== État ============================== */
+const KEY_JEU = "miniManager.v2";
+const escJ = s => String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let MM = null;   // tous les profils joueurs
+let J = null;    // le profil en train de jouer (raccourci)
+
+function jeuDefaut(nom, avatar, objectifNom, objectifCible){
+  const J = {
+    v:1, nom, avatar,
+    portefeuille: 15, tirelire: 0,
+    objectif: {nom: objectifNom, cible: objectifCible},
+    bonheur: 8,
+    file: SCENARIOS.map((_,i)=>i).sort(() => Math.random() - 0.5),
+    jour: todayJeu(), jourNumero: 1,
+    cartesDuJour: [], cartesFaites: 0,
+    missionsJour: [],
+    inventaire: [], historique: []
+  };
+  tirerJournee(J);
+  return J;
+}
+const todayJeu = () => {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+};
+function tirerJournee(J){
+  if(!J.file || !J.file.length) J.file = SCENARIOS.map((_,i)=>i).sort(() => Math.random() - 0.5);
+  J.cartesDuJour = J.file.splice(0, CARTES_PAR_JOUR);
+  J.cartesFaites = 0;
+  const melange = MISSIONS_POOL.slice().sort(() => Math.random() - 0.5);
+  J.missionsJour = melange.slice(0, MISSIONS_PAR_JOUR).map(m => ({...m, faite:false}));
+}
+/* Nouvelle journée : argent de poche quotidien + nouvelles cartes et missions */
+function nouveauJourSiBesoin(){
+  const t = todayJeu();
+  if(J.jour === t) return false;
+  J.jour = t;
+  J.jourNumero = (J.jourNumero || 1) + 1;
+  J.portefeuille += POCHE_QUOTIDIENNE;
+  if(!J.file || !J.file.length) J.file = SCENARIOS.map((_,i)=>i).sort(() => Math.random() - 0.5);
+  J.cartesDuJour = J.file.splice(0, CARTES_PAR_JOUR);
+  J.cartesFaites = 0;
+  const melange = MISSIONS_POOL.slice().sort(() => Math.random() - 0.5);
+  J.missionsJour = melange.slice(0, MISSIONS_PAR_JOUR).map(m => ({...m, faite:false}));
+  J.historique.unshift({jour: J.jourNumero, txt: "💰 Argent de poche du jour : " + POCHE_QUOTIDIENNE + " €"});
+  return true;
+}
+function jeuCharger(){
+  try{
+    const raw = localStorage.getItem(KEY_JEU);
+    if(raw){ const p = JSON.parse(raw); if(p && p.profils) return p; }
+  }catch(e){}
+  try{
+    const old = localStorage.getItem("miniManager.v1");
+    if(old){
+      const j = JSON.parse(old);
+      if(j && j.nom){
+        var id = "p" + Date.now();
+        var profs = {};
+        profs[id] = j;
+        localStorage.removeItem("miniManager.v1");
+        return {actif: id, profils: profs};
+      }
+    }
+  }catch(e){}
+  return {actif: null, profils: {}};
+}
+function jeuSauver(){
+  try{
+    MM.savedAt = Date.now();
+    localStorage.setItem(KEY_JEU, JSON.stringify(MM));
+  }catch(e){}
+}
+
+/* ============================== Affichage ============================== */
+const $c = id => document.getElementById(id);
+const fmtJ = n => Number(n).toLocaleString("fr-FR", {minimumFractionDigits: Number(n) % 1 ? 2 : 0, maximumFractionDigits: 2}) + " €";
+
+function jauges(){
+  $c("j-porte").textContent = fmtJ(J.portefeuille);
+  $c("j-tirelire").textContent = fmtJ(J.tirelire);
+  const cible = J.objectif ? J.objectif.cible : 80;
+  $c("j-tirelire-bar").style.width = Math.min(100, cible>0 ? J.tirelire/cible*100 : 0) + "%";
+  const pleines = Math.round(J.bonheur/2);
+  $c("j-coeurs").textContent = "❤️".repeat(Math.max(0,pleines)) + "🤍".repeat(Math.max(0, 5-pleines));
+  $c("j-humeur").textContent = J.bonheur>=8?"😄":J.bonheur>=6?"🙂":J.bonheur>=4?"😐":J.bonheur>=2?"😟":"😢";
+}
+
+function effetChips(o){
+  let h = "";
+  if(o.p) h += `<span class="chip ${o.p<0?"dep":"gain"}">${o.p<0?"−":"+"}${fmtJ(Math.abs(o.p))}</span>`;
+  if(o.h) h += `<span class="chip ${o.h>0?"coeur-haut":"coeur-bas"}">${o.h>0?"❤️ +"+o.h:"💔 "+o.h}</span>`;
+  return h;
+}
+
+function mascotte(msg, impacts, btnTxt, action){
+  const zone = $c("zone-mascotte");
+  zone.innerHTML = `<div class="mascotte">
+    <div class="bete">🐿️</div>
+    <div class="bulle">
+      <div class="nom">NOISETTE L'ÉCUREUIL</div>
+      <div class="message">${msg}</div>
+      <div class="impacts">${impacts||""}</div>
+      <button class="btn-ok" id="mascotte-ok">${btnTxt||"Continuer ➜"}</button>
+    </div>
+  </div>`;
+  $c("mascotte-ok").onclick = () => { zone.innerHTML = ""; if(action) action(); };
+}
+function mascotteFermer(){ $c("zone-mascotte").innerHTML = ""; }
+
+function confettis(){
+  const emojis = ["🎉","✨","💚","💛","🪙","⭐"];
+  for(let i=0;i<34;i++){
+    const c = document.createElement("div");
+    c.className = "confetti";
+    c.textContent = emojis[i % emojis.length];
+    c.style.left = Math.random()*100 + "vw";
+    c.style.animationDuration = (1.6 + Math.random()*1.6) + "s";
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 3400);
+  }
+}
+
+/* ============================== Écrans ============================== */
+
+function ecranBienvenue(){
+  $c("contenu").innerHTML = `
+  <div class="bienvenue">
+    <div class="mascotte-grande">🐿️</div>
+    <h1>Bienvenue à Mini-Manager !</h1>
+    <p>Je suis <b>Noisette</b>, l'écureuil gardien des tirelires.<br>Ensemble, on va apprendre à gérer ton argent… en t'amusant !</p>
+    <input id="bienvenue-nom" placeholder="Comment tu t'appelles ?" maxlength="14">
+    <p style="margin:18px 0 8px;font-weight:800;color:#16a34a">Pour quoi veux-tu économiser ? 🐷</p>
+    <div class="objectifs-choix" id="objectifs-choix">
+      ${OBJECTIFS.map(o=>`<button data-o="${o.o}" data-c="${o.c}">${o.e} ${o.o} · ${o.c} €</button>`).join("")}
+    </div>
+    <button class="btn-partir" id="bienvenue-partir" disabled>C'est parti ! ➜</button>
+  </div>`;
+  let choix = null;
+  $c("objectifs-choix").addEventListener("click", e => {
+    const b = e.target.closest("button"); if(!b) return;
+    document.querySelectorAll("#objectifs-choix button").forEach(x => x.classList.remove("choisi"));
+    b.classList.add("choisi"); choix = {nom: b.dataset.o, cible: +b.dataset.c};
+    $c("bienvenue-partir").disabled = !$c("bienvenue-nom").value.trim() || !choix;
+  });
+  $c("bienvenue-nom").addEventListener("input", e => {
+    $c("bienvenue-partir").disabled = !e.target.value.trim() || !choix;
+  });
+  $c("bienvenue-partir").onclick = () => {
+    const nom = $c("bienvenue-nom").value.trim();
+    if(!nom || !choix) return;
+    J = jeuDefaut(nom, AVATARS_JEU[Math.floor(Math.random()*AVATARS_JEU.length)], choix.nom, choix.cible);
+    jeuSauver();
+    mascotte(`Super, ${nom} ! Voici tes <b>15 €</b> de départ. Dépense-les malin, épargne pour ton ${choix.nom.toLowerCase()}… et écoute mes conseils !`, null, "Jouer ➜", ecranJeu);
+  };
+}
+
+function ecranJeu(){
+  jauges();
+  const cartesFini = J.cartesFaites >= J.cartesDuJour.length;
+  const missionsFini = J.missionsJour.every(m=>m.faite);
+  const jourFini = cartesFini && missionsFini;
+  const objectif = J.objectif;
+  const objTxt = objectif ? `${fmtJ(objectif.cible)} — ${objectif.nom}` : "—";
+
+  let blocCarte;
+  if(jourFini){
+    const demain = new Date(Date.now() + 86400000).toLocaleDateString("fr-FR", {weekday:"long", day:"numeric", month:"long"});
+    blocCarte = `
+      <span class="badge-semaine">Jour ${J.jourNumero} ✅ terminé</span>
+      <div class="emoji-situation">🌟</div>
+      <h2>Tu as tout terminé, ${J.nom} !</h2>
+      <div class="desc">Aventure : <b>${J.cartesTotales||0} / ${SCENARIOS.length} cartes explorées</b>.<br>Noisette prépare <b>8 nouvelles cartes pour demain (${demain})</b>.<br><br>À demain ! 🐿️</div>`;
+  } else if(cartesFini){
+    blocCarte = `
+      <span class="badge-semaine">✅ Cartes du jour terminées</span>
+      <div class="emoji-situation">🎯</div>
+      <h2>Il te reste tes missions !</h2>
+      <div class="desc">Coche-les quand c'est fait, juste en dessous 👇</div>`;
+  } else {
+    const s = SCENARIOS[J.cartesDuJour[J.cartesFaites]];
+    blocCarte = `
+      <span class="badge-semaine">Carte ${J.cartesFaites+1} / ${J.cartesDuJour.length}</span>
+      <div style="font-size:11.5px;color:#7c95a8;font-weight:700;margin-top:4px">Aventure : ${J.cartesTotales||0} / ${SCENARIOS.length} cartes explorées</div>
+      <div class="emoji-situation">${s.emoji}</div>
+      <h2>${s.titre}</h2>
+      <div class="desc">${s.desc}</div>
+      <div class="options">
+        ${s.opts.map((o,i)=>{
+          const manque = o.p < 0 && J.portefeuille < Math.abs(o.p);
+          return `<button class="option" data-choix="${i}" ${manque?"disabled":""}>
+            <span class="o-ico">${o.i}</span>
+            <span class="o-txt">${o.t}${manque?`<div class="chip manque" style="margin-top:4px">💸 Il te manque ${fmtJ(Math.abs(o.p)-J.portefeuille)}</div>`:""}</span>
+            <span class="o-chips">${effetChips(o)}</span>
+          </button>`;
+        }).join("")}
+      </div>`;
+  }
+
+  const missionsHtml = J.missionsJour.map((m,i)=>{
+    const gains = `${m.e2>0 ? "+"+m.e2+" €" : ""}${m.h>0 ? (m.e2>0?" · ":"") + "❤️ +"+m.h : ""}`;
+    return `<div class="fam-mission${m.faite?" fait":""}">
+      <span class="fam-mission-nom">${m.e} ${m.n}</span>
+      <span class="fam-mission-prix" style="color:#16a34a">${gains}</span>
+      ${m.faite ? `<span class="badge ok" style="margin-left:auto">✓</span>` : `<button class="btn btn-grad btn-sm" data-mission-jour="${i}" style="margin-left:auto;padding:5px 12px">Fait !</button>`}
+    </div>`;
+  }).join("");
+
+  $c("contenu").innerHTML = `
+  <section class="situation">${blocCarte}</section>
+
+  <div class="actions">
+    <button class="action tirelire-act" data-action-jeu="tirelire"><span class="a-ico">🏦</span>Ma tirelire<div style="font-size:11.5px;color:#7c95a8;font-weight:700">Objectif : ${objTxt}</div></button>
+    <button class="action magasin-act" data-action-jeu="magasin"><span class="a-ico">🛒</span>Le magasin<div style="font-size:11.5px;color:#7c95a8;font-weight:700">Dépenser un peu</div></button>
+    <button class="action objectif-act" data-action-jeu="objectif"><span class="a-ico">🎯</span>Mon objectif<div style="font-size:11.5px;color:#7c95a8;font-weight:700">${objectif?escJ(objectif.nom):"à choisir"}</div></button>
+  </div>
+
+  <div class="inventaire">
+    <h3>✅ MISSIONS DU JOUR (${J.missionsJour.filter(m=>m.faite).length}/${J.missionsJour.length})</h3>
+    ${missionsHtml}
+  </div>
+
+  <div class="inventaire">
+    <h3>🎒 TES AFFAIRES</h3>
+    <div class="objets">${(J.inventaire||[]).map(x=>`<span class="objet">${x}</span>`).join("") || `<span class="rien">Achète des choses au magasin et elles apparaîtront ici !</span>`}</div>
+  </div>
+
+  <div class="inventaire" style="margin-top:12px">
+    <h3>📖 TON HISTOIRE</h3>
+    <div style="margin-top:8px">${(J.historique||[]).slice(0,6).map(h=>`<div style="display:flex;gap:8px;padding:4px 0;font-size:13.5px;color:#7c95a8"><b style="color:#23415c">Jour ${h.jour||h.sem||"1"}</b> ${h.txt}</div>`).join("") || `<span class="rien">Ta grande aventure commence…</span>`}</div>
+  </div>`;
+}
+
+/* ============================== Actions du jeu ============================== */
+
+function choisirOption(i){
+  const s = SCENARIOS[J.cartesDuJour[J.cartesFaites]];
+  const o = s.opts[i];
+  if(o.p < 0 && J.portefeuille < Math.abs(o.p)) return;
+  J.portefeuille = Math.max(0, Math.round((J.portefeuille + o.p)*100)/100);
+  J.bonheur = Math.max(0, Math.min(10, J.bonheur + o.h));
+  if(o.tirelire) J.tirelire += o.tirelire;
+  J.cartesFaites++;
+  J.cartesTotales = (J.cartesTotales||0) + 1;
+  J.historique.unshift({jour: J.jourNumero, txt: `${o.i} ${s.titre} — ${o.t}`});
+  if(J.historique.length > 40) J.historique.length = 40;
+  jeuSauver(); jauges();
+  const cartesFini = J.cartesFaites >= J.cartesDuJour.length;
+  const missionsFini = J.missionsJour.every(m=>m.faite);
+  if(cartesFini && missionsFini){
+    confettis();
+    mascotte(o.m + "<br><br><b>🌟 TU AS TOUT TERMINÉ POUR AUJOURD'HUI !</b><br>Noisette prépare de nouvelles cartes et missions pour demain. Dors bien…", effetChips(o), "À demain 💤", ecranJeu);
+    return;
+  }
+  if(cartesFini){
+    mascotte(o.m + "<br><br>✅ C'était ta dernière carte du jour ! Il te reste <b>des missions à cocher</b> juste en dessous.", effetChips(o), "Voir mes missions ➜", ecranJeu);
+    return;
+  }
+  mascotte(o.m, effetChips(o), "Continuer ➜", ecranJeu);
+}
+
+function ouvrirTirelire(){
+  const o = J.objectif;
+  $c("zone-modale").innerHTML = `<div class="modale-fond" id="fond-modale"><div class="modale">
+    <h3>🏦 Ma tirelire : ${fmtJ(J.tirelire)}</h3>
+    <p style="color:#7c95a8;font-size:13.5px;margin-bottom:12px">Objectif : <b>${o ? o.nom : "aucun"}</b> ${o ? `— ${fmtJ(o.epargne||0)} mis de côté sur ${fmtJ(o.cible)}` : ""}</p>
+    <div class="transferts">
+      <button data-trans="1">Mettre 1 €</button>
+      <button data-trans="5">Mettre 5 €</button>
+      <button data-trans="all">Mettre tout (${fmtJ(J.portefeuille)})</button>
+    </div>
+    ${o && o.epargne >= o.cible ? `<button class="btn-partir" style="margin-top:16px" data-acheter="1">🎉 Acheter ton ${o.nom} !</button>` : ""}
+    <button class="btn-fermer" data-fermer="1">Fermer</button>
+  </div></div>`;
+  document.querySelectorAll("[data-trans]").forEach(b => b.onclick = () => {
+    const montant = b.dataset.trans === "all" ? J.portefeuille : +b.dataset.trans;
+    if(!o){ toastJeu("Choisis d'abord un objectif !"); return; }
+    if(montant <= 0){ toastJeu("Ton portefeuille est vide…"); return; }
+    const real = Math.min(montant, J.portefeuille);
+    J.portefeuille -= real; J.tirelire += real;
+    jeuSauver(); jauges(); fermerModale(); ouvrirTirelire();
+  });
+  const ach = document.querySelector("[data-acheter]");
+  if(ach) ach.onclick = () => {
+    confettis();
+    J.objectif = null; J.tirelire = 0;
+    jeuSauver(); fermerModale();
+    mascotte(`INCROYABLE, ${J.nom} ! Tu as économisé et réalisé ton projet ! 🎉 Tu peux en être très fier — et choisir un nouveau défi quand tu veux !`, null, "Nouveau défi ➜", ecranJeu);
+  };
+  attacherFermer();
+}
+function ouvrirMagasin(){
+  $c("zone-modale").innerHTML = `<div class="modale-fond" id="fond-modale"><div class="modale">
+    <h3>🛒 Le magasin</h3>
+    <div class="liste-magasin">
+      ${BOUTIQUE.map((a,i)=>`<button class="article" data-article="${i}" ${J.portefeuille < a.p ? "disabled":""}>
+        <span class="a-e">${a.e}</span><b>${a.n}</b><span class="a-p">${fmtJ(a.p)} · ❤️ +${a.h}</span>
+      </button>`).join("")}
+    </div>
+    <p style="color:#7c95a8;font-size:12.5px;margin-top:10px">Chaque achat te rend un peu plus heureux… mais vide ton portefeuille. À toi de choisir !</p>
+    <button class="btn-fermer" data-fermer="1">Fermer</button>
+  </div></div>`;
+  document.querySelectorAll("[data-article]").forEach(b => b.onclick = () => {
+    const a = BOUTIQUE[+b.dataset.article];
+    if(J.portefeuille < a.p) return;
+    J.portefeuille -= a.p;
+    J.bonheur = Math.min(10, J.bonheur + a.h);
+    J.inventaire = J.inventaire || [];
+    J.inventaire.unshift(a.e);
+    jeuSauver(); jauges(); fermerModale(); ouvrirMagasin();
+  });
+  attacherFermer();
+}
+function toastJeu(msg){
+  mascotte(msg, null, "OK !", null);
+}
+function fermerModale(){ $c("zone-modale").innerHTML = ""; }
+function attacherFermer(){
+  const f = document.querySelector("[data-fermer]");
+  if(f) f.onclick = () => { fermerModale(); ecranJeu(); };
+  document.getElementById("fond-modale").addEventListener("click", e => { if(e.target.id === "fond-modale"){ fermerModale(); ecranJeu(); } });
+}
+
+function ouvrirObjectif(){
+  $c("zone-modale").innerHTML = `<div class="modale-fond" id="fond-modale"><div class="modale">
+    <h3>🎯 Changer d'objectif d'épargne</h3>
+    <p style="color:#7c95a8;font-size:13.5px;margin-bottom:12px">Pour quoi veux-tu économiser maintenant ?</p>
+    <div class="objectifs-choix" style="display:flex;gap:10px;flex-wrap:wrap">
+      ${OBJECTIFS.map(o=>`<button data-o="${o.o}" data-c="${o.c}">${o.e} ${o.o} · ${o.c} €</button>`).join("")}
+    </div>
+    <button class="btn-fermer" data-fermer="1" style="margin-top:16px">Fermer</button>
+  </div></div>`;
+  document.querySelectorAll("[data-o]").forEach(b => b.onclick = () => {
+    J.objectif = {nom: b.dataset.o, cible: +b.dataset.c};
+    jeuSauver(); fermerModale(); ecranJeu();
+    mascotte(`Nouvel objectif : <b>${b.dataset.o}</b> (${fmtJ(+b.dataset.c)}) ! Mets régulièrement un peu de côté et tu l'auras plus vite que tu ne penses.`, null, "C'est parti ➜", null);
+  });
+  attacherFermer();
+}
+
+/* ============================== Écran de sélection des profils ============================== */
+
+function ecranProfils(){
+  var ids = Object.keys(MM.profils);
+  var cartes = ids.map(function(id){
+    var p = MM.profils[id];
+    return `<div class="profil-carte">
+      <div class="p-avatar">${p.avatar}</div>
+      <div class="p-nom">${escJ(p.nom)}</div>
+      <div class="p-stats">💰 ${fmtJ(p.portefeuille)} · 🐷 ${fmtJ(p.tirelire)}</div>
+      <div class="p-objectif">${p.objectif ? "🎯 " + escJ(p.objectif.nom) + " · " + fmtJ(p.objectif.cible) : ""}</div>
+      <button class="btn-jouer" data-jouer="${id}">▶ Jouer</button>
+      <div class="p-liens">
+        <a data-reset-prof="${id}">Réinitialiser la partie</a> · <a data-del-prof="${id}">Supprimer</a>
+      </div>
+    </div>`;
+  }).join("");
+
+  var carteAjout = `<div class="profil-carte carte-ajout" data-nouveau-joueur="1">
+    <div class="p-avatar" style="font-size:34px;background:#ecfdf5;border-radius:50%;width:64px;height:64px;display:flex;align-items:center;justify-content:center;border:3px dashed #a7f3d0">＋</div>
+    <div class="p-nom" style="color:#16a34a">Nouveau joueur</div>
+    <div class="p-stats">Ajoute un frère, une sœur,<br>un cousin…</div>
+    <button class="btn-jouer" style="background:linear-gradient(135deg,#34d399,#10b981)">➕ Créer</button>
+    <div class="p-liens">&nbsp;</div>
+  </div>`;
+
+  $c("contenu").innerHTML = `
+  <section class="bienvenue" style="padding:26px 20px">
+    <div class="mascotte-grande" style="font-size:54px">👥</div>
+    <h1 style="font-size:22px">Qui joue ?</h1>
+    <p style="color:#7c95a8;font-size:14px">Chaque enfant a sa tirelire, ses missions et ses cartes.</p>
+  </section>
+  <div class="grid-profils" style="margin-top:6px">${cartes}${carteAjout}</div>`;
+}
+
+/* Modale de création d'un nouveau joueur */
+function ouvrirNouveauJoueur(){
+  $c("zone-modale").innerHTML = `<div class="modale-fond" id="fond-modale"><div class="modale">
+    <h3>➕ Nouveau joueur</h3>
+    <input id="nv-nom" placeholder="Comment tu t'appelles ?" maxlength="14" style="width:100%;background:#f7fbf2;border:3px solid #e3f0e6;border-radius:16px;padding:12px 14px;font-family:inherit;font-size:17px;font-weight:700;color:#23415c;text-align:center;outline:none">
+    <p style="margin:16px 0 8px;font-weight:800;color:#23415c;text-align:center;font-size:14px">Choisis ton avatar</p>
+    <div id="nv-avatars" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      ${AVATARS_JEU.map(a=>`<button data-avatar="${a}" style="font-size:26px;width:52px;height:52px;border-radius:50%;border:3px solid #e3f0e6;background:#f7fbf2;cursor:pointer">${a}</button>`).join("")}
+    </div>
+    <p style="margin:16px 0 8px;font-weight:800;color:#16a34a;text-align:center;font-size:14px">Pour quoi veux-tu économiser ? 🐷</p>
+    <div id="nv-objectifs" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      ${OBJECTIFS.map(o=>`<button data-o="${o.o}" data-c="${o.c}" style="background:#ecfdf5;border:2px solid #a7f3d0;border-radius:14px;padding:9px 12px;font-family:inherit;font-weight:800;color:#16a34a;cursor:pointer;font-size:13px">${o.e} ${o.o} · ${o.c} €</button>`).join("")}
+    </div>
+    <button class="btn-partir" id="nv-go" style="margin-top:18px">C'est parti ! ➜</button>
+    <button class="btn-fermer" data-fermer="1">Annuler</button>
+  </div></div>`;
+
+  var avatarChoisi = null, objChoisi = null;
+  $c("nv-avatars").addEventListener("click", function(e){
+    var b = e.target.closest("[data-avatar]"); if(!b) return;
+    document.querySelectorAll("#nv-avatars button").forEach(function(x){ x.style.borderColor = "#e3f0e6"; x.style.background = "#f7fbf2"; });
+    b.style.borderColor = "#fbbf24"; b.style.background = "#fffbef";
+    avatarChoisi = b.dataset.avatar;
+  });
+  $c("nv-objectifs").addEventListener("click", function(e){
+    var b = e.target.closest("[data-o]"); if(!b) return;
+    document.querySelectorAll("#nv-objectifs button").forEach(function(x){ x.style.borderColor = "#a7f3d0"; x.style.background = "#ecfdf5"; x.style.color = "#16a34a"; });
+    b.style.borderColor = "#fbbf24"; b.style.background = "#fffbef";
+    objChoisi = {nom: b.dataset.o, cible: +b.dataset.c};
+  });
+  $c("nv-nom").addEventListener("input", function(){});
+  $c("nv-go").onclick = function(){
+    var nom = $c("nv-nom").value.trim();
+    var reouvrir = function(){
+      ouvrirNouveauJoueur();
+      document.getElementById("nv-nom").value = nom;
+    };
+    fermerModale();
+    if(!nom){
+      mascotte("Comment tu t'appelles ? Écris ton prénom dans la case ! ✏️", null, "OK !", reouvrir);
+      return;
+    }
+    if(!avatarChoisi){
+      mascotte("Choisis ton avatar — le petit personnage qui te représente ! 🦊🐼🐸", null, "OK !", reouvrir);
+      return;
+    }
+    if(!objChoisi){
+      mascotte("Choisis ton objectif : pour quoi veux-tu économiser ? 🐷", null, "OK !", reouvrir);
+      return;
+    }
+    var id = "p" + Date.now();
+    MM.profils[id] = jeuDefaut(nom, avatarChoisi, objChoisi.nom, objChoisi.cible);
+    MM.actif = id; J = MM.profils[id];
+    jeuSauver();
+    mascotte(`Super, ${nom} ! Voici tes <b>15 €</b> de départ. Dépense-les malin, épargne pour ton ${objChoisi.nom.toLowerCase()}… et écoute mes conseils !`, null, "Jouer ➜", ecranJeu);
+  };
+  var f = document.querySelector("[data-fermer]");
+  if(f) f.onclick = function(){ fermerModale(); ecranProfils(); };
+}
+
+function semaineSuivante(){ /* remplacée par le système de jours */ }
+
+/* ============================== Démarrage ============================== */
+MM = jeuCharger();
+if(MM.actif && MM.profils[MM.actif]){
+  J = MM.profils[MM.actif];
+  nouveauJourSiBesoin();
+  jeuSauver();
+  ecranJeu();
+} else {
+  J = null;
+  ecranProfils();
+}
+
+document.body.addEventListener("click", e => {
+  const mj = e.target.closest("[data-mission-jour]");
+  if(mj){
+    const i = +mj.dataset.missionJour;
+    const m = J.missionsJour[i];
+    if(!m || m.faite) return;
+    m.faite = true;
+    J.portefeuille += m.e2;
+    J.bonheur = Math.min(10, J.bonheur + m.h);
+    jeuSauver(); jauges();
+    const cartesFini = J.cartesFaites >= J.cartesDuJour.length;
+    if(cartesFini && J.missionsJour.every(x=>x.faite)){
+      confettis();
+      mascotte("TU AS TOUT TERMINÉ POUR AUJOURD'HUI ! 🌟 Noisette prépare de nouvelles cartes et missions pour demain. Dors bien… et à demain !", null, "À demain 💤", ecranJeu);
+      return;
+    }
+    ecranJeu();
+    return;
+  }
+  const nj = e.target.closest("[data-nouveau-joueur]");
+  if(nj){ ouvrirNouveauJoueur(); return; }
+  const rp = e.target.closest("[data-jouer]");
+  if(rp){
+    MM.actif = rp.dataset.jouer;
+    J = MM.profils[MM.actif];
+    nouveauJourSiBesoin();
+    jeuSauver(); ecranJeu();
+    return;
+  }
+  const rst = e.target.closest("[data-reset-prof]");
+  if(rst){
+    var idR = rst.dataset.resetProf;
+    var pr = MM.profils[idR];
+    if(pr && confirm("Réinitialiser la partie de " + pr.nom + " ?\n\nSon argent, sa tirelire et ses objectifs reviennent au début (son prénom est conservé).")){
+      MM.profils[idR] = jeuDefaut(pr.nom, pr.avatar, pr.objectif ? pr.objectif.nom : "Cadeaux", pr.objectif ? pr.objectif.cible : 50);
+      if(MM.actif === idR) J = MM.profils[idR];
+      jeuSauver(); ecranProfils();
+      toastJeu("Partie réinitialisée !");
+    }
+    return;
+  }
+  const dp = e.target.closest("[data-del-prof]");
+  if(dp){
+    var idD = dp.dataset.delProf;
+    var nomD = MM.profils[idD] ? MM.profils[idD].nom : "ce joueur";
+    if(confirm("Supprimer le joueur « " + nomD + " » et sa tirelire ?")){ 
+      delete MM.profils[idD];
+      if(MM.actif === idD){ MM.actif = null; J = null; }
+      jeuSauver(); ecranProfils();
+      toastJeu("Joueur supprimé.");
+    }
+    return;
+  }
+  const o = e.target.closest("[data-choix]");
+  if(o){ choisirOption(+o.dataset.choix); return; }
+  const a = e.target.closest("[data-action-jeu]");
+  if(a){
+    const k = a.dataset.actionJeu;
+    if(k === "tirelire") ouvrirTirelire();
+    else if(k === "magasin") ouvrirMagasin();
+    else if(k === "objectif") ouvrirObjectif();
+    else if(k === "reset"){
+      if(confirm("Recommencer la partie de " + J.nom + " à zéro ?\n\nSon argent, sa tirelire et ses objectifs reviennent au début (son prénom est conservé).")){
+        J = jeuDefaut(J.nom, J.avatar, J.objectif ? J.objectif.nom : "Cadeaux", J.objectif ? J.objectif.cible : 50);
+        MM.profils[MM.actif] = J;
+        jeuSauver(); ecranJeu();
+        toastJeu("Nouvelle partie, nouveau départ !");
+      }
+    }
+    return;
+  }
+});
+
+if(J && MM.actif){ ecranJeu(); } else { ecranProfils(); }
+
+/* Synchronisation multi-onglets du jeu */
+function syncJeuOnglets(){
+  try{
+    if(!MM) return;
+    var raw = localStorage.getItem(KEY_JEU);
+    if(!raw) return;
+    var autre = JSON.parse(raw);
+    var autreAt = (autre && autre.savedAt) || 0;
+    var moiAt = (MM && MM.savedAt) || 0;
+    if(autreAt > moiAt){
+      MM = autre;
+      if(MM.actif && MM.profils[MM.actif]){ J = MM.profils[MM.actif]; nouveauJourSiBesoin(); }
+      else { J = null; }
+      ecranJeu();
+    }
+  }catch(e){}
+}
+window.addEventListener("focus", syncJeuOnglets);
+
+document.getElementById("btn-joueurs").addEventListener("click", ecranProfils);
+
+/* Bouton retour en haut (visible sur les pages longues) */
+function majHautPageJeu(){
+  var hp = document.getElementById("haut-page");
+  if(hp) hp.style.display = window.scrollY > 350 ? "flex" : "none";
+}
+window.addEventListener("scroll", majHautPageJeu, {passive:true});
+document.getElementById("haut-page").addEventListener("click", function(){ window.scrollTo({top:0, behavior:"smooth"}); });
+majHautPageJeu();
+</script>
+</body>
+</html>
