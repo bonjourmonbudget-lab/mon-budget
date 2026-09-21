@@ -2137,7 +2137,7 @@ function statsFor(st, month){
   const ep = byCat["epargne"]||0;
   let varTot = 0;
   for(const k in byCat) if(k!=="epargne") varTot += byCat[k];
-  return {rev, chg, byCat, ep, varTot, rav: rev - chg - varTot};
+  return {rev, chg, byCat, ep, varTot, rav: rev - chg - varTot - ep};
 }
 
 function renderCouple(){
@@ -2726,9 +2726,21 @@ document.getElementById("app").addEventListener("click", async e=>{
     if(!g) return;
     g.epargne = 0; save(); render(); toast("Épargne rendue au pot non alloué.");
   }
-  else if(a==="goal-del"){
-    S.goals = S.goals.filter(g=>g.id!==el.dataset.id);
-    save(); render(); toast("Objectif supprimé — son épargne retourne dans le pot.");
+      else if(a==="goal-del"){
+    const g = S.goals.find(x=>x.id===el.dataset.id);
+    var virementsLies = [];
+    var totalLies = 0;
+    if(g){
+      const labelLien = "Virement épargne — " + g.nom;
+      virementsLies = S.transactions.filter(t => t.cat === "epargne" && t.label === labelLien);
+      totalLies = virementsLies.reduce((s,t)=>s+(+t.montant||0), 0);
+      if(virementsLies.length && confirm("Supprimer aussi les " + fmt0.format(totalLies) + " EUR de virements d épargne liés à ce projet ? OK = tout retirer. Annuler = garder les virements.")){
+        S.transactions = S.transactions.filter(t => !(t.cat === "epargne" && t.label === labelLien));
+      }
+    }
+    S.goals = S.goals.filter(x=>x.id!==el.dataset.id);
+    save(); render();
+    toast(virementsLies.length ? "Projet et virements liés supprimés (" + fmt0.format(totalLies) + " retirés de l épargne)." : "Objectif supprimé.");
   }
   else if(a==="fu-fund"){
     const amt = parseAmount(document.getElementById("goal-in-__fu__")?.value);
