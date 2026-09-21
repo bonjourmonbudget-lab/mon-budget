@@ -545,6 +545,7 @@ function normalize(st){
   if(typeof st.visite !== "boolean") st.visite = true; // états antérieurs à l'écran de bienvenue : utilisateurs existants
   if(!st.famille || !Array.isArray(st.famille.enfants)) st.famille = {enfants:[]};
   if(!st.actifBudget) st.actifBudget = "moi";
+  if(!st.settings.partage) st.settings.partage = {besoins:50, envies:30, epargne:20};
   for(const c of (st.settings.chargesFixes||[])){
     if(!c.cat) c.cat = guessFixedCat(c.label);
   }
@@ -805,6 +806,11 @@ function rollover(catId, m){
    les enveloppes de dépenses variables repartent à zéro chaque mois */
 const ROLLOVER_CATS = new Set(["epargne"]);
 const dispoOf = (catId, m) => ROLLOVER_CATS.has(catId) ? budgetOf(catId) + rollover(catId, m) : budgetOf(catId);
+
+function partageTarget(id){
+  var p = S.settings.partage || {besoins:50, envies:30, epargne:20};
+  return (p[id]||0)/100;
+}
 
 function bucketBudget(bucketId){
   let sum = bucketId==="besoins" ? chargesTotal() : 0;
@@ -1291,18 +1297,24 @@ function renderBudget(){
   const totalBudgete = chargesTotal() + CATS.reduce((s,c)=>s+budgetOf(c.id),0);
 
   const bucketCards = BUCKETS.map(b=>{
+    const target = partageTarget(b.id);
     const amt = bucketBudget(b.id);
     const pct = rev>0 ? amt/rev*100 : 0;
-    const cible = rev*b.target;
+    const cible = rev*target;
     const delta = amt - cible;
     const note = b.id==="besoins"
       ? (delta>0 ? `dont ${fmt0.format(chargesTotal())} de charges fixes — cible 50 % difficilement tenable, l'essentiel est de protéger l'épargne`
                  : `dont ${fmt0.format(chargesTotal())} de charges fixes`)
       : (delta<0 ? `${fmt0.format(-delta)} de marge sous la cible` : `${fmt0.format(delta)} au-dessus de la cible`);
     return `<div class="card bucket">
-      <div class="lbl2">${dot(b.color)}${b.label}</div>
+      <div class="lbl2">${dot(b.color)}${b.label}
+        <span style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted)">Cible %
+          <input type="text" inputmode="numeric" value="${Math.round(target*100)}" data-partage="${b.id}" style="width:52px;text-align:right;padding:5px 8px">
+        </span>
+      </div>
       <div class="val2">${fmt0.format(amt)} <span style="font-size:13px;color:var(--muted);font-weight:600">(${Math.round(pct)} % du revenu)</span></div>
-      <div class="rec">Cible ${Math.round(b.target*100)} % : ${fmt0.format(cible)} — ${note}</div>
+      <div class="rec">Cible ${fmt0.format(cible)} — ${note}</div>
+      ${b.id==="epargne" ? `<div class="rec" style="color:var(--muted)">💡 Épargné ce mois (réel) : <b style="color:var(--text)">${fmt0.format(savedIn(m))}</b></div>` : ""}
     </div>`;
   }).join("");
 
@@ -2956,6 +2968,12 @@ document.getElementById("app").addEventListener("change", e=>{
     };
     rd.readAsArrayBuffer(f);
     return;
+  }
+  if(el.dataset.partage){
+    var v = parseInt(el.value, 10);
+    if(isNaN(v) || v < 0 || v > 100){ render(); return; }
+    S.settings.partage[el.dataset.partage] = v;
+    save(); render(); return;
   }
   if(el.dataset.budget){
     const v = parseAmount(el.value);
