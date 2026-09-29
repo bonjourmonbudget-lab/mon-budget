@@ -438,6 +438,7 @@
     <button data-tab="famille">Famille</button>
     <button data-tab="plan">Plan d'action</button>
     <button data-tab="settings">Paramètres</button>
+    <button data-tab="compte">Compte</button>
     <button id="btn-undo" title="Annuler la dernière action" style="display:none">↩ Annuler</button>
   </nav>
   <a class="btn-home" href="index.html" title="Aller à la page d'accueil">🏠 Accueil</a>
@@ -761,8 +762,8 @@ function estPlus(){
 }
 function exigerPlus(nom){
   if(estPlus()) return true;
-  toast("« " + nom + " » fait partie de Mon Budget Plus — activez votre licence dans Paramètres.");
-  UI.tab = "settings"; render();
+  toast("« " + nom + " » fait partie de Mon Budget Plus — activez votre licence dans l'onglet Compte.");
+  UI.tab = "compte"; render();
   return false;
 }
 function applyTheme(){
@@ -1652,8 +1653,19 @@ function renderSettings(){
         <select class="cat-sel" id="new-rule-cat">${cats().map(c=>`<option value="${c.id}">${esc(c.label)}</option>`).join("")}</select>
         <button class="btn btn-ghost btn-sm" data-action="add-rule" style="white-space:nowrap">＋ Ajouter la règle</button>
       </div>
-    </div>
+  </section>`;
+}
 
+/* ============================== Onglet : Compte & application ============================== */
+
+function renderCompteTab(){
+  return `
+  <section class="hero" style="text-align:center">
+    <h1><span class="grad-text">Compte</span> &amp; application</h1>
+    <p class="sub" style="margin-left:auto;margin-right:auto;max-width:640px">Votre licence Mon Budget Plus, votre compte, l'apparence, l'installation et vos sauvegardes. Vos données budgétaires restent sur cet appareil.</p>
+  </section>
+
+  <section class="section" style="display:flex;flex-direction:column;gap:16px;max-width:760px;margin:48px auto 0">
     <div class="card settings-card">
       <h3 style="font-size:16px">Mon Budget Plus</h3>
       ${estPlus() ? `
@@ -2529,7 +2541,7 @@ document.addEventListener("keydown", (e) => {
   if(btn){ btn.classList.add("calc-flash"); setTimeout(() => btn.classList.remove("calc-flash"), 130); }
 });
 
-const TABS = {dash:renderDash, tx:renderTx, bilan:renderBilan, budget:renderBudget, goals:renderGoals, couple:renderCouple, famille:renderFamille, plan:renderPlan, settings:renderSettings};
+const TABS = {dash:renderDash, tx:renderTx, bilan:renderBilan, budget:renderBudget, goals:renderGoals, couple:renderCouple, famille:renderFamille, plan:renderPlan, settings:renderSettings, compte:renderCompteTab};
 
 function welcomeHtml(){
   return `<div style="position:fixed;inset:0;background:rgba(5,5,10,.72);z-index:60;display:flex;align-items:center;justify-content:center;padding:20px">
@@ -2851,7 +2863,7 @@ document.getElementById("app").addEventListener("click", async e=>{
     save(); render(); toast("Budget partenaire retiré — vous êtes de retour sur votre budget.");
   }
   else if(a==="goto-plus"){
-    UI.tab = "settings"; render();
+    UI.tab = "compte"; render();
     const c = Array.prototype.slice.call(document.querySelectorAll(".settings-card")).find(x => x.textContent.indexOf("Mon Budget Plus") > -1);
     if(c) c.scrollIntoView({ block: "center" });
   }
@@ -3280,7 +3292,7 @@ document.addEventListener("click", async e=>{
   if(!mbDispo()){ toast("Connexion au compte indisponible hors-ligne."); return; }
   const a = el.dataset.action;
   if(a==="compte-open"){ mbPopToggle(true); return; }
-  if(a==="compte-goto-settings"){ mbPopToggle(false); UI.tab = "settings"; render(); return; }
+  if(a==="compte-goto-settings"){ mbPopToggle(false); UI.tab = "compte"; render(); return; }
   if(a==="compte-lien"){
     const email = (document.getElementById("compte-email")?.value || "").trim();
     if(!mbEmailOk(email)){ mbMsg("Entrez une adresse email valide.", true); return; }
