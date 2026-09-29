@@ -3272,7 +3272,9 @@ function mbMsg(txt, err){
   else if(txt) toast(txt);
 }
 
-document.getElementById("app").addEventListener("click", async e=>{
+/* Gestionnaire au niveau document : le bouton du bandeau et le panneau
+   sont en dehors de #app, un écouteur sur #app ne verrait jamais leurs clics */
+document.addEventListener("click", async e=>{
   const el = e.target.closest('[data-action^="compte-"]');
   if(!el) return;
   if(!mbDispo()){ toast("Connexion au compte indisponible hors-ligne."); return; }
