@@ -272,6 +272,24 @@
   }
   .btn-home:hover{color:var(--text-strong);border-color:var(--accent-soft);background:var(--nav-hover)}
 
+  /* Bouton compte (bandeau) + panneau de connexion */
+  #btn-compte{
+    margin-left:8px;display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+    background:var(--nav-active);border:1px solid var(--border-2);color:#d8d8e4;
+    padding:8px 14px;border-radius:10px;font-weight:600;font-size:13.5px;font-family:inherit;
+    transition:.15s
+  }
+  #btn-compte:hover{color:var(--text-strong);border-color:var(--accent-soft);background:var(--nav-hover)}
+  #btn-compte .avatar{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;background:linear-gradient(135deg,#a78bfa,#7c3aed);flex:none}
+  #btn-compte .mail{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #compte-pop{
+    position:fixed;top:58px;right:12px;z-index:60;width:min(380px,calc(100vw - 24px));
+    background:var(--card);border:1px solid var(--border-2);border-radius:14px;
+    padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.45)
+  }
+  #compte-pop[hidden]{display:none}
+  @media (max-width:720px){ #btn-compte .mail{display:none} #compte-pop{top:64px} }
+
   /* Bouton retour en haut — à droite, centré verticalement */
   #haut-page{
     position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:45;width:48px;height:48px;
@@ -423,7 +441,10 @@
     <button id="btn-undo" title="Annuler la dernière action" style="display:none">↩ Annuler</button>
   </nav>
   <a class="btn-home" href="index.html" title="Aller à la page d'accueil">🏠 Accueil</a>
+  <button id="btn-compte" data-action="compte-open" title="Mon compte"></button>
 </header>
+
+<div id="compte-pop" hidden></div>
 
 <main id="app"></main>
 
@@ -3167,37 +3188,83 @@ const MB_FB = {
 let MB_user = null;
 const mbDispo = () => typeof firebase !== "undefined" && !!firebase.auth;
 const mbEmailOk = (s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
-
-function renderCompte(){
-  const z = document.getElementById("compte-zone");
-  if(!z) return;
+const mbPop = () => document.getElementById("compte-pop");
+const mbPopOuverte = () => { const p = mbPop(); return !!p && !p.hidden; };
+function mbPopToggle(ouvrir){
+  const p = mbPop(); if(!p) return;
+  const cible = (typeof ouvrir === "boolean") ? ouvrir : p.hidden;
+  if(cible){
+    p.hidden = false;
+    renderComptePop();
+    const inp = document.getElementById("compte-email");
+    if(inp) setTimeout(()=>inp.focus(), 40);
+  } else {
+    p.hidden = true;
+  }
+}
+function renderCompteBouton(){
+  const b = document.getElementById("btn-compte");
+  if(!b) return;
+  b.innerHTML = MB_user
+    ? `<span class="avatar">${esc((MB_user.email || "?")[0].toUpperCase())}</span><span class="mail">${esc(MB_user.email)}</span>`
+    : `👤 Se connecter`;
+}
+function renderComptePop(){
+  const p = mbPop(); if(!p || p.hidden) return;
   let html;
   if(!mbDispo()){
-    html = `<div class="empty" style="padding:12px">Service de compte indisponible (hors-ligne ?). L'application fonctionne normalement sans compte.</div>`;
+    html = `<div style="font-weight:700;font-size:14px;margin-bottom:6px">Connexion</div><div class="empty" style="padding:10px">Service indisponible (hors-ligne ?). L'application fonctionne normalement sans compte.</div>`;
   } else if(MB_user){
     html = `
-      <div class="row" style="gap:10px;margin-top:10px;flex-wrap:wrap">
+      <div class="row" style="gap:10px;flex-wrap:wrap;margin-bottom:12px">
         <span class="badge ok">✓ Connecté</span>
-        <span style="color:var(--muted);font-size:13.5px">${esc(MB_user.email)}</span>
+        <span style="color:var(--muted);font-size:13px;word-break:break-all">${esc(MB_user.email)}</span>
       </div>
-      <div class="row" style="margin-top:12px"><button class="btn btn-ghost btn-sm" data-action="compte-logout">Se déconnecter</button></div>
-      <p style="color:var(--muted-2);font-size:12px;margin-top:10px">Nouvel appareil ? Reconnectez-vous ici, puis recollez votre clé de licence (reçue par email lors de l'achat) dans la carte « Mon Budget Plus ».</p>`;
+      <div class="row" style="flex-wrap:wrap;gap:8px">
+        <button class="btn btn-ghost btn-sm" data-action="compte-goto-settings">Paramètres du compte</button>
+        <button class="btn btn-ghost btn-sm" data-action="compte-logout">Se déconnecter</button>
+      </div>
+      <p style="color:var(--muted-2);font-size:11.5px;margin:10px 0 0">Vos données budgétaires restent sur cet appareil.</p>`;
   } else {
     html = `
-      <div class="row" style="flex-wrap:wrap;gap:10px">
-        <input class="lab" id="compte-email" type="email" placeholder="votre@email.fr" style="flex:1;min-width:200px">
-        <button class="btn btn-grad btn-sm" data-action="compte-lien" style="white-space:nowrap">✉️ Recevoir un lien de connexion</button>
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px">Connexion à Mon Budget</div>
+      <p style="color:var(--muted);font-size:12px;margin:0 0 10px">Recevez un lien sécurisé par email — sans mot de passe. Vos données budgétaires restent sur cet appareil.</p>
+      <div class="row" style="flex-wrap:wrap;gap:8px">
+        <input class="lab" id="compte-email" type="email" placeholder="votre@email.fr" style="flex:1;min-width:170px">
+        <button class="btn btn-grad btn-sm" data-action="compte-lien" style="white-space:nowrap">✉️ Recevoir le lien</button>
       </div>
-      <div id="compte-status" style="margin-top:8px;font-size:12.5px;min-height:18px;color:var(--muted)"></div>
-      <details style="margin-top:6px">
-        <summary style="cursor:pointer;color:var(--muted);font-size:12.5px">Ou utiliser un mot de passe</summary>
-        <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:10px">
-          <input class="lab" id="compte-mdp" type="password" placeholder="Mot de passe (6 caractères min.)" style="flex:1;min-width:200px">
-          <button class="btn btn-ghost btn-sm" data-action="compte-mdp" style="white-space:nowrap">Se connecter / Créer mon compte</button>
+      <div id="compte-status" style="margin-top:8px;font-size:12px;min-height:16px;color:var(--muted)"></div>
+      <details style="margin-top:4px">
+        <summary style="cursor:pointer;color:var(--muted);font-size:12px">Ou utiliser un mot de passe</summary>
+        <div class="row" style="margin-top:8px;flex-wrap:wrap;gap:8px">
+          <input class="lab" id="compte-mdp" type="password" placeholder="Mot de passe (6 caractères min.)" style="flex:1;min-width:170px">
+          <button class="btn btn-ghost btn-sm" data-action="compte-mdp" style="white-space:nowrap">Se connecter / Créer</button>
         </div>
       </details>`;
   }
-  if(z.__html !== html){ z.__html = html; z.innerHTML = html; }
+  p.innerHTML = html;
+}
+function renderCompte(){
+  renderCompteBouton();
+  const z = document.getElementById("compte-zone");
+  if(z){
+    let html;
+    if(!mbDispo()){
+      html = `<div class="empty" style="padding:12px">Service de compte indisponible (hors-ligne ?). L'application fonctionne normalement sans compte.</div>`;
+    } else if(MB_user){
+      html = `
+        <div class="row" style="gap:10px;margin-top:10px;flex-wrap:wrap">
+          <span class="badge ok">✓ Connecté</span>
+          <span style="color:var(--muted);font-size:13.5px">${esc(MB_user.email)}</span>
+        </div>
+        <div class="row" style="margin-top:12px"><button class="btn btn-ghost btn-sm" data-action="compte-logout">Se déconnecter</button></div>
+        <p style="color:var(--muted-2);font-size:12px;margin-top:10px">Nouvel appareil ? Reconnectez-vous, puis recollez votre clé de licence (reçue par email lors de l'achat) dans la carte « Mon Budget Plus ».</p>`;
+    } else {
+      html = `<div class="row" style="margin-top:10px"><button class="btn btn-grad btn-sm" data-action="compte-open">Se connecter / Créer mon compte</button></div>`;
+    }
+    if(z.__html !== html){ z.__html = html; z.innerHTML = html; }
+  }
+  if(mbPopOuverte()) renderComptePop();
 }
 function mbMsg(txt, err){
   const el = document.getElementById("compte-status");
@@ -3210,6 +3277,8 @@ document.getElementById("app").addEventListener("click", async e=>{
   if(!el) return;
   if(!mbDispo()){ toast("Connexion au compte indisponible hors-ligne."); return; }
   const a = el.dataset.action;
+  if(a==="compte-open"){ mbPopToggle(true); return; }
+  if(a==="compte-goto-settings"){ mbPopToggle(false); UI.tab = "settings"; render(); return; }
   if(a==="compte-lien"){
     const email = (document.getElementById("compte-email")?.value || "").trim();
     if(!mbEmailOk(email)){ mbMsg("Entrez une adresse email valide.", true); return; }
@@ -3279,6 +3348,18 @@ window.addEventListener("DOMContentLoaded", ()=>{
       new MutationObserver(()=>renderCompte()).observe(app, {childList:true, subtree:true});
     }
     renderCompte();
+    // Fermeture du panneau connexion : clic extérieur ou touche Échap
+    document.addEventListener("click", e=>{
+      if(!mbPopOuverte()) return;
+      if(e.target.closest("#compte-pop") || e.target.closest("#btn-compte") || e.target.closest('[data-action="compte-open"]')) return;
+      mbPopToggle(false);
+    });
+    document.addEventListener("keydown", e=>{ if(e.key === "Escape") mbPopToggle(false); });
+    // Lien « Se connecter » cliqué depuis la vitrine : ouverture automatique du panneau
+    if(!MB_user && (/[?&]connexion=1/.test(location.search) || location.hash === "#connexion")){
+      mbPopToggle(true);
+      history.replaceState(null, "", location.pathname);
+    }
   }catch(_){ /* le compte est facultatif : jamais bloquant */ }
 });
 </script>
