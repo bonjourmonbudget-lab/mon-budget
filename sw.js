@@ -1,5 +1,5 @@
 /* Mon Budget — service worker : fonctionne hors-ligne (vitrine + application) */
-const CACHE = "monbudget-v11";
+const CACHE = "monbudget-v12";
 const ASSETS = ["./", "./index.html", "./app.html", "./jeu.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./apercu.png"];
 
 self.addEventListener("install", (e) => {
@@ -21,9 +21,11 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
 
   // Navigation : réseau d'abord (pour rester à jour), repli sur les pages en cache
+  // "no-cache" = revalidation serveur systématique : les mises à jour sont
+  // visibles dès la visite suivante, même à moins de 10 minutes d'intervalle.
   if (e.request.mode === "navigate") {
     e.respondWith(
-      fetch(e.request)
+      fetch(e.request, { cache: "no-cache" })
         .then((r) => {
           const cp = r.clone();
           caches.open(CACHE).then((c) => c.put(e.request, cp));
