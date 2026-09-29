@@ -430,6 +430,10 @@
 <footer>Mon Budget — 2026 · Vos données restent sur votre machine (stockage local du navigateur).</footer>
 <button id="haut-page" title="Retour en haut de page" style="display:none">⬆</button>
 
+<!-- Connexion par email (Firebase Auth) — la config est publique par conception -->
+<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+
 <script>
 "use strict";
 
@@ -1645,6 +1649,12 @@ function renderSettings(){
         </div>
         <div class="sub" id="lic-status" style="margin-top:8px;font-size:12.5px;min-height:18px"></div>
       `}
+    </div>
+
+    <div class="card settings-card">
+      <h3 style="font-size:16px">Mon compte</h3>
+      <p style="color:var(--muted);font-size:12.5px;margin:8px 0 12px">Connectez-vous avec votre email pour sécuriser votre licence Mon Budget Plus et la retrouver sur un nouvel appareil. <b>Vos données budgétaires restent sur cet appareil</b> — le compte ne retient que votre email, jamais vos chiffres.</p>
+      <div id="compte-zone"><div class="empty" style="padding:12px">Chargement du compte…</div></div>
     </div>
 
     <div class="card settings-card">
@@ -3140,6 +3150,137 @@ window.addEventListener("beforeinstallprompt", (e) => {
 if (window.matchMedia("(display-mode: standalone)").matches) {
   document.body.classList.add("is-standalone");
 }
+
+/* =====================================================================
+   MON COMPTE — connexion par email (Firebase Auth, lien magique + mot de passe)
+   Le compte ne sert qu'à identifier l'utilisateur et sécuriser sa licence.
+   Aucune donnée budgétaire ne quitte l'appareil.
+   ===================================================================== */
+const MB_FB = {
+  apiKey: "AIzaSyD8lo4AK60kbZM7pJfP_p7vI0e-IAvZ48Q",
+  authDomain: "mon-budget-a4164.firebaseapp.com",
+  projectId: "mon-budget-a4164",
+  storageBucket: "mon-budget-a4164.firebasestorage.app",
+  messagingSenderId: "246983520680",
+  appId: "1:246983520680:web:5d8120e61a56e0c102ed9d"
+};
+let MB_user = null;
+const mbDispo = () => typeof firebase !== "undefined" && !!firebase.auth;
+const mbEmailOk = (s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
+
+function renderCompte(){
+  const z = document.getElementById("compte-zone");
+  if(!z) return;
+  let html;
+  if(!mbDispo()){
+    html = `<div class="empty" style="padding:12px">Service de compte indisponible (hors-ligne ?). L'application fonctionne normalement sans compte.</div>`;
+  } else if(MB_user){
+    html = `
+      <div class="row" style="gap:10px;margin-top:10px;flex-wrap:wrap">
+        <span class="badge ok">✓ Connecté</span>
+        <span style="color:var(--muted);font-size:13.5px">${esc(MB_user.email)}</span>
+      </div>
+      <div class="row" style="margin-top:12px"><button class="btn btn-ghost btn-sm" data-action="compte-logout">Se déconnecter</button></div>
+      <p style="color:var(--muted-2);font-size:12px;margin-top:10px">Nouvel appareil ? Reconnectez-vous ici, puis recollez votre clé de licence (reçue par email lors de l'achat) dans la carte « Mon Budget Plus ».</p>`;
+  } else {
+    html = `
+      <div class="row" style="flex-wrap:wrap;gap:10px">
+        <input class="lab" id="compte-email" type="email" placeholder="votre@email.fr" style="flex:1;min-width:200px">
+        <button class="btn btn-grad btn-sm" data-action="compte-lien" style="white-space:nowrap">✉️ Recevoir un lien de connexion</button>
+      </div>
+      <div id="compte-status" style="margin-top:8px;font-size:12.5px;min-height:18px;color:var(--muted)"></div>
+      <details style="margin-top:6px">
+        <summary style="cursor:pointer;color:var(--muted);font-size:12.5px">Ou utiliser un mot de passe</summary>
+        <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:10px">
+          <input class="lab" id="compte-mdp" type="password" placeholder="Mot de passe (6 caractères min.)" style="flex:1;min-width:200px">
+          <button class="btn btn-ghost btn-sm" data-action="compte-mdp" style="white-space:nowrap">Se connecter / Créer mon compte</button>
+        </div>
+      </details>`;
+  }
+  if(z.__html !== html){ z.__html = html; z.innerHTML = html; }
+}
+function mbMsg(txt, err){
+  const el = document.getElementById("compte-status");
+  if(el){ el.textContent = txt || ""; el.style.color = err ? "#ef4444" : "var(--muted)"; }
+  else if(txt) toast(txt);
+}
+
+document.getElementById("app").addEventListener("click", async e=>{
+  const el = e.target.closest('[data-action^="compte-"]');
+  if(!el) return;
+  if(!mbDispo()){ toast("Connexion au compte indisponible hors-ligne."); return; }
+  const a = el.dataset.action;
+  if(a==="compte-lien"){
+    const email = (document.getElementById("compte-email")?.value || "").trim();
+    if(!mbEmailOk(email)){ mbMsg("Entrez une adresse email valide.", true); return; }
+    mbMsg("✉️ Envoi du lien en cours…");
+    try{
+      await firebase.auth().sendSignInLinkToEmail(email, { url: location.origin + location.pathname, handleCodeInApp: true });
+      try{ localStorage.setItem("mbEmailForLink", email); }catch(_){}
+      mbMsg("✅ Lien envoyé à " + email + " — ouvrez-le sur cet appareil pour être connecté. Absent ? Regardez les spams.");
+    }catch(err){ mbMsg("Erreur : " + ((err && err.message) || "envoi impossible"), true); }
+  }
+  else if(a==="compte-mdp"){
+    const email = (document.getElementById("compte-email")?.value || "").trim();
+    const mdp = document.getElementById("compte-mdp")?.value || "";
+    if(!mbEmailOk(email) || mdp.length < 6){ mbMsg("Email valide + mot de passe de 6 caractères minimum.", true); return; }
+    mbMsg("⏳ Connexion en cours…");
+    try{
+      await firebase.auth().signInWithEmailAndPassword(email, mdp);
+    }catch(err){
+      const code = (err && err.code) || "";
+      if(code === "auth/user-not-found" || code === "auth/invalid-credential" || code === "auth/invalid-login-credentials"){
+        try{
+          await firebase.auth().createUserWithEmailAndPassword(email, mdp);
+        }catch(err2){
+          const c2 = (err2 && err2.code) || "";
+          mbMsg(c2 === "auth/email-already-in-use" ? "Cet email a déjà un compte : le mot de passe est incorrect." :
+                c2 === "auth/weak-password" ? "Mot de passe trop court (6 caractères minimum)." :
+                "Erreur : " + ((err2 && err2.message) || "création impossible"), true);
+        }
+      }
+      else if(code === "auth/wrong-password"){ mbMsg("Mot de passe incorrect.", true); }
+      else if(code === "auth/too-many-requests"){ mbMsg("Trop d'essais — réessayez dans quelques minutes.", true); }
+      else mbMsg("Erreur : " + ((err && err.message) || "connexion impossible"), true);
+    }
+  }
+  else if(a==="compte-logout"){
+    try{ await firebase.auth().signOut(); toast("Déconnecté. À bientôt !"); }
+    catch(_){ toast("Déconnexion impossible pour le moment."); }
+  }
+});
+
+window.addEventListener("DOMContentLoaded", ()=>{
+  try{
+    if(!mbDispo()) return;
+    firebase.initializeApp(MB_FB);
+    firebase.auth().onAuthStateChanged(u=>{
+      const avant = MB_user;
+      MB_user = u;
+      renderCompte();
+      if(u && !avant) toast("✅ Connecté : " + u.email);
+      if(!u && avant) toast("Déconnecté.");
+    });
+    // Retour depuis l'email : le lien magique contient les paramètres de connexion
+    if(firebase.auth().isSignInWithEmailLink(location.href)){
+      let mail = null;
+      try{ mail = localStorage.getItem("mbEmailForLink"); }catch(_){}
+      if(!mail) mail = window.prompt("Pour terminer la connexion, confirmez votre adresse email :") || "";
+      if(mail){
+        firebase.auth().signInWithEmailLink(mail, location.href)
+          .then(()=>{ try{ localStorage.removeItem("mbEmailForLink"); }catch(_){} })
+          .catch(()=>toast("Lien de connexion expiré ou déjà utilisé — réessayez depuis Paramètres."));
+      }
+      history.replaceState(null, "", location.pathname);
+    }
+    // La zone compte est rendue à part : on la rafraîchit à chaque rendu de l'app
+    const app = document.getElementById("app");
+    if(app && "MutationObserver" in window){
+      new MutationObserver(()=>renderCompte()).observe(app, {childList:true, subtree:true});
+    }
+    renderCompte();
+  }catch(_){ /* le compte est facultatif : jamais bloquant */ }
+});
 </script>
 </body>
 </html>
