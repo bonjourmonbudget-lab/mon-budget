@@ -75,3 +75,5 @@ self.addEventListener("fetch", (e) => {
     )
   );
 });
+
+/* nudge deploiement 2026-10-05 */
