@@ -843,12 +843,16 @@ function parseAmount(s){
 
 /* ============================== Calculs ============================== */
 
-const chargesTotal = () => S.settings.chargesFixes.reduce((s,c)=>s+(+c.montant||0),0);
-const revenuTotal = () => S.settings.revenus.reduce((s,r)=>s+(+r.montant||0),0);
+/* Une ligne de revenu/charge est « active » dans un mois si elle n'a pas de date
+   d'effet (depuis) ou si celle-ci est atteinte. Sans mois précisé : toutes les
+   lignes comptent (vues Paramètres, plan d'action prospectif). */
+const actifDans = (item, m) => !item.depuis || !m || item.depuis <= m;
+const chargesTotal = (m) => S.settings.chargesFixes.reduce((s,c)=>s+(actifDans(c,m)?(+c.montant||0):0),0);
+const revenuTotal  = (m) => S.settings.revenus.reduce((s,r)=>s+(actifDans(r,m)?(+r.montant||0):0),0);
 const txIn = month => S.transactions.filter(t => (t.date||"").slice(0,7) === month);
 const spentVar = month => txIn(month).filter(t => t.cat!=="epargne").reduce((s,t)=>s+(+t.montant||0),0);
 const savedIn  = month => txIn(month).filter(t => t.cat==="epargne").reduce((s,t)=>s+(+t.montant||0),0);
-const rav      = () => revenuTotal() - chargesTotal();
+const rav      = (m) => revenuTotal(m) - chargesTotal(m);
 const spentByCat = (month,id) => txIn(month).filter(t=>t.cat===id).reduce((s,t)=>s+(+t.montant||0),0);
 const budgetOf = id => +S.budgets[id] || 0;
 
@@ -875,8 +879,8 @@ function partageTarget(id){
   return (p[id]||0)/100;
 }
 
-function bucketBudget(bucketId){
-  let sum = bucketId==="besoins" ? chargesTotal() : 0;
+function bucketBudget(bucketId, m){
+  let sum = bucketId==="besoins" ? chargesTotal(m) : 0;
   for(const c of cats()) if(c.bucket===bucketId) sum += budgetOf(c.id);
   return sum;
 }
@@ -1161,7 +1165,7 @@ function toast(msg){
 
 function renderDash(){
   const m = UI.month;
-  const rev = revenuTotal(), chg = chargesTotal(), varSp = spentVar(m), ep = savedIn(m);
+  const rev = revenuTotal(m), chg = chargesTotal(m), varSp = spentVar(m), ep = savedIn(m);
   const r = rav(m);
   const objPct = S.settings.objectif>0 ? ep/S.settings.objectif*100 : 0;
 
@@ -1356,18 +1360,18 @@ function renderTx(){
 
 function renderBudget(){
   const m = UI.month;
-  const rev = revenuTotal();
-  const totalBudgete = chargesTotal() + CATS.reduce((s,c)=>s+budgetOf(c.id),0);
+  const rev = revenuTotal(m);
+  const totalBudgete = chargesTotal(m) + CATS.reduce((s,c)=>s+budgetOf(c.id),0);
 
   const bucketCards = BUCKETS.map(b=>{
     const target = partageTarget(b.id);
-    const amt = bucketBudget(b.id);
+    const amt = bucketBudget(b.id, m);
     const pct = rev>0 ? amt/rev*100 : 0;
     const cible = rev*target;
     const delta = amt - cible;
     const note = b.id==="besoins"
-      ? (delta>0 ? `dont ${fmt0.format(chargesTotal())} de charges fixes — cible 50 % difficilement tenable, l'essentiel est de protéger l'épargne`
-                 : `dont ${fmt0.format(chargesTotal())} de charges fixes`)
+      ? (delta>0 ? `dont ${fmt0.format(chargesTotal(m))} de charges fixes — cible 50 % difficilement tenable, l'essentiel est de protéger l'épargne`
+                 : `dont ${fmt0.format(chargesTotal(m))} de charges fixes`)
       : (delta<0 ? `${fmt0.format(-delta)} de marge sous la cible` : `${fmt0.format(delta)} au-dessus de la cible`);
     return `<div class="card bucket">
       <div class="lbl2">${dot(b.color)}${b.label}
@@ -1598,6 +1602,7 @@ function renderSettings(){
     <div class="row">
       <input class="lab" type="text" value="${esc(r.label)}" data-rev="${r.id}" data-rfield="label" placeholder="Ex. Salaire principal">
       <input class="mont" type="text" inputmode="decimal" value="${String(r.montant).replace(".",",")}" data-rev="${r.id}" data-rfield="montant" placeholder="0">
+      <input type="month" value="${r.depuis||""}" data-rev="${r.id}" data-rfield="depuis" title="Applicable à partir de ce mois (facultatif — vide = toujours)" style="width:150px;padding:9px 10px;border-radius:10px;border:1px solid var(--border-2);background:var(--bg);color:var(--text);font-family:inherit;font-size:13.5px">
       <button class="icon-btn" data-action="del-revenu" data-id="${r.id}" title="Supprimer">✕</button>
     </div>`).join("");
   const fixedByCat = FIXED_CATS.map(fc=>{
@@ -1609,6 +1614,7 @@ function renderSettings(){
       <input class="lab" type="text" value="${esc(c.label)}" data-charge="${c.id}" data-cfield="label" placeholder="Ex. Loyer">
       <select class="cat-sel" data-charge="${c.id}" data-cfield="cat">${FIXED_CATS.map(fc=>`<option value="${fc.id}"${c.cat===fc.id?" selected":""}>${esc(fc.label)}</option>`).join("")}</select>
       <input class="mont" type="text" inputmode="decimal" value="${String(c.montant).replace(".",",")}" data-charge="${c.id}" data-cfield="montant" placeholder="0">
+      <input type="month" value="${c.depuis||""}" data-charge="${c.id}" data-cfield="depuis" title="Applicable à partir de ce mois (facultatif — vide = toujours)" style="width:150px;padding:9px 10px;border-radius:10px;border:1px solid var(--border-2);background:var(--bg);color:var(--text);font-family:inherit;font-size:13.5px">
       <button class="icon-btn" data-action="del-charge" data-id="${c.id}" title="Supprimer">✕</button>
     </div>`).join("");
 
@@ -1632,7 +1638,7 @@ function renderSettings(){
           <select data-set="jourPaie">${Array.from({length:28},(_,i)=>`<option ${S.settings.jourPaie===i+1?"selected":""}>${i+1}</option>`).join("")}</select>
         </label>
       </div>
-      <p class="sub" style="color:var(--muted);font-size:12.5px;margin-top:10px">Astuce : une ligne par salaire ou complément de revenu — le <b>total</b> alimente automatiquement tout le tableau de bord. L'objectif est ce que vous voulez épargner <b>en plus</b> chaque mois ; le virement conseillé part le jour de paie.</p>
+      <p class="sub" style="color:var(--muted);font-size:12.5px;margin-top:10px">Astuce : une ligne par salaire ou complément de revenu — le <b>total</b> alimente automatiquement tout le tableau de bord. Salaire ou charge qui change en cours d'année ? Renseignez la colonne <b>« depuis »</b> (facultative) : les mois passés garderont l'ancien montant, les suivants le nouveau. L'objectif est ce que vous voulez épargner <b>en plus</b> chaque mois ; le virement conseillé part le jour de paie.</p>
     </div>
 
     <div class="card settings-card">
@@ -1866,7 +1872,8 @@ function renderBilan(){
   const sixM = lastNMonths(m, UI.period);
   const sixAvecTx = sixM.filter(mo => txIn(mo).some(t=>t.cat!=="epargne"));
   const depMoy = sixAvecTx.length ? sixAvecTx.reduce((s,mo)=>s+spentVar(mo),0)/sixAvecTx.length : 0;
-  const taux = (nM && revenuTotal()>0) ? epCumulee/(revenuTotal()*nM)*100 : 0;
+  const taux = (nM ? months.reduce((s,mo)=>s+revenuTotal(mo),0) : 0) > 0
+    ? epCumulee/months.reduce((s,mo)=>s+revenuTotal(mo),0)*100 : 0;
 
   // Bilan du mois vs moyenne des 3 mois précédents
   const prev3 = lastNMonths(shiftMonth(m,-1), 3);
@@ -2078,7 +2085,7 @@ function renderGoals(){
   const m = monthKey(new Date());
   const pot = epargnePot();
   const fuMois = +S.settings.fuMois || 3;
-  const fuCible = Math.round(chargesTotal()*fuMois);
+  const fuCible = Math.round(chargesTotal(monthKey(new Date()))*fuMois);
   const fuEp = +S.fuEpargne || 0;
   const alloc = fuEp + S.goals.reduce((s,g)=>s+(+g.epargne||0),0);
   const libre = pot - alloc;
@@ -2089,7 +2096,7 @@ function renderGoals(){
       <div class="top"><span class="name" style="font-weight:800;font-size:15.5px">🛟 Fonds d'urgence</span>${fuPct>=100?`<span class="badge ok">Protégé ✓</span>`:""}</div>
       <div class="mid">${bar(fuPct,"good")}</div>
       <div class="nums"><span>Épargné <b>${fmt0.format(fuEp)}</b> / ${fmt0.format(fuCible)} — ${fuCible>0?Math.round(fuPct):0} %</span></div>
-      <p style="color:var(--muted);font-size:12.5px;margin:10px 0">Couvre <b>${fuMois} mois</b> de vos charges fixes (${fmt0.format(chargesTotal())}/mois). Conseillé : 3 à 6 mois, sur un compte disponible mais séparé.
+      <p style="color:var(--muted);font-size:12.5px;margin:10px 0">Couvre <b>${fuMois} mois</b> de vos charges fixes (${fmt0.format(chargesTotal(monthKey(new Date())))}/mois). Conseillé : 3 à 6 mois, sur un compte disponible mais séparé.
         <select data-set="fuMois" style="width:auto;padding:6px 10px;margin-left:8px">
           ${[1,3,6].map(n=>`<option value="${n}"${fuMois===n?" selected":""}>${n} mois</option>`).join("")}
         </select>
@@ -2675,7 +2682,7 @@ document.getElementById("app").addEventListener("click", async e=>{
   }
   else if(a==="suggest-budgets"){
     if(!confirm("Générer de nouvelles enveloppes ?\n\nCela REMPLACERA vos enveloppes variables actuelles (charges fixes et épargne conservées).")) return;
-    const pool = Math.max(0, revenuTotal() - chargesTotal() - S.settings.objectif);
+    const pool = Math.max(0, revenuTotal(monthKey(new Date())) - chargesTotal(monthKey(new Date())) - S.settings.objectif);
     const w = {alimentation:.45, transport:.13, loisirs:.12, restaurants:.09, sante:.06, shopping:.10, autre:.05};
     for(const [id,share] of Object.entries(w)) S.budgets[id] = Math.round(pool*share/5)*5;
     S.budgets.epargne = S.settings.objectif;
@@ -3088,6 +3095,7 @@ document.getElementById("app").addEventListener("change", e=>{
     const r = S.settings.revenus.find(x=>x.id===el.dataset.rev);
     if(!r) return;
     if(el.dataset.rfield==="label"){ r.label = el.value; save(); return; }
+    if(el.dataset.rfield==="depuis"){ r.depuis = el.value || undefined; save(); render(); return; }
     const v = parseAmount(el.value);
     if(v===null){ render(); return; }
     r.montant = v; save(); render(); return;
@@ -3139,6 +3147,7 @@ document.getElementById("app").addEventListener("change", e=>{
     if(!c) return;
     if(el.dataset.cfield==="label"){ c.label = el.value; save(); return; }
     if(el.dataset.cfield==="cat"){ c.cat = el.value; save(); render(); return; }
+    if(el.dataset.cfield==="depuis"){ c.depuis = el.value || undefined; save(); render(); return; }
     const v = parseAmount(el.value);
     if(v===null){ render(); return; }
     c.montant = v; save(); render(); return;
