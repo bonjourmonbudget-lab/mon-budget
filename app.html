@@ -264,17 +264,9 @@
   #btn-undo{color:var(--amber);border-color:rgba(251,191,36,.4)}
   #btn-undo:hover{color:var(--text-strong);border-color:var(--amber);background:rgba(251,191,36,.12)}
 
-  .btn-home{
-    margin-left:auto;display:inline-flex;align-items:center;gap:6px;
-    background:var(--nav-active);border:1px solid var(--border-2);color:#d8d8e4;
-    padding:8px 14px;border-radius:10px;font-weight:600;font-size:13.5px;
-    transition:.15s;text-decoration:none
-  }
-  .btn-home:hover{color:var(--text-strong);border-color:var(--accent-soft);background:var(--nav-hover)}
-
   /* Bouton compte (bandeau) + panneau de connexion */
   #btn-compte{
-    margin-left:8px;display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+    margin-left:auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;
     background:var(--nav-active);border:1px solid var(--border-2);color:#d8d8e4;
     padding:8px 14px;border-radius:10px;font-weight:600;font-size:13.5px;font-family:inherit;
     transition:.15s
@@ -441,7 +433,6 @@
     <button data-tab="compte">Compte</button>
     <button id="btn-undo" title="Annuler la dernière action" style="display:none">↩ Annuler</button>
   </nav>
-  <a class="btn-home" href="index.html" title="Aller à la page d'accueil">🏠 Accueil</a>
   <button id="btn-compte" data-action="compte-open" title="Mon compte"></button>
 </header>
 
