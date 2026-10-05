@@ -472,7 +472,7 @@ const CATS = [
   {id:"shopping",     label:"Shopping & maison",  color:"#22d3ee", bucket:"envies"},
   {id:"autre",        label:"Autre",              color:"#9ca3af", bucket:"envies"},
   {id:"epargne",      label:"Épargne & projets",  color:"#c084fc", bucket:"epargne"},
-  {id:"revenu",       label:"Cadeau / rentrée",   color:"#4ade80", bucket:null},
+  {id:"revenu",       label:"Rentrée exceptionnelle", color:"#4ade80", bucket:null},
 ];
 const cats = () => (Array.isArray(S.cats) && S.cats.length ? S.cats : CATS);
 const catOf = id => cats().find(c=>c.id===id) || {id, label:id, color:"#9ca3af", bucket:"envies"};
@@ -607,9 +607,9 @@ function normalize(st){
   if(!st.actifBudget) st.actifBudget = "moi";
   if(!st.settings.partage) st.settings.partage = {besoins:50, envies:30, epargne:20};
   if(typeof st.settings.centimes !== "boolean") st.settings.centimes = false;
-  // Migration : catégorie « Cadeau / rentrée » pour les comptes créés avant son arrivée
+  // Migration : catégorie « Rentrée exceptionnelle » pour les comptes créés avant son arrivée
   if(Array.isArray(st.cats) && !st.cats.some(c=>c.id==="revenu")){
-    st.cats.push({id:"revenu", label:"Cadeau / rentrée", color:"#4ade80", bucket:null});
+    st.cats.push({id:"revenu", label:"Rentrée exceptionnelle", color:"#4ade80", bucket:null});
   }
   for(const c of (st.settings.chargesFixes||[])){
     if(!c.cat) c.cat = guessFixedCat(c.label);
@@ -1307,6 +1307,8 @@ function renderTx(){
     .concat(cats().map(c=>`<option value="${c.id}"${UI.txCat===c.id?" selected":""}>${esc(c.label)}</option>`)).join("");
 
   let list = S.transactions.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  // Les rentrées exceptionnelles se gèrent dans Paramètres, pas dans l'historique des dépenses
+  list = list.filter(t=>t.cat!=="revenu");
   if(UI.txMonth!=="all") list = list.filter(t=>(t.date||"").slice(0,7)===UI.txMonth);
   if(UI.txCat!=="all") list = list.filter(t=>t.cat===UI.txCat);
 
@@ -1336,7 +1338,7 @@ function renderTx(){
         <label class="field">Date<input type="date" name="date" value="${todayISO()}" required></label>
         <label class="field">Libellé<input type="text" name="libelle" id="tx-label" placeholder="Ex. Supermarché" required></label>
         <label class="field">Montant (€)<input type="text" inputmode="decimal" name="montant" id="tx-amount" placeholder="34,90" required></label>
-        <label class="field">Catégorie<select name="cat">${cats().map(c=>`<option value="${c.id}">${esc(c.label)}</option>`).join("")}</select></label>
+        <label class="field">Catégorie<select name="cat">${cats().filter(c=>c.id!=="revenu").map(c=>`<option value="${c.id}">${esc(c.label)}</option>`).join("")}</select></label>
         <button class="btn btn-grad" type="submit">Ajouter</button>
       </form>
     </div>
@@ -1651,6 +1653,35 @@ function renderSettings(){
     </div>
 
     <div class="card settings-card">
+      <h3 style="font-size:16px">🎁 Rentrées exceptionnelles</h3>
+      <p style="color:var(--muted);font-size:12.5px;margin:8px 0 12px">Un cadeau reçu, de l'argent liquide, une vente, un remboursement, une prime ponctuelle… Ces rentrées gonflent le <b>reste à vivre du mois choisi</b> — sans toucher à vos revenus récurrents ni aux mois suivants.</p>
+      <div class="row" style="flex-wrap:wrap;gap:10px;align-items:flex-end">
+        <label class="field" style="flex:1;min-width:150px">Mois concerné
+          <input type="month" id="revex-mois" value="${UI.revexMois||UI.month}" style="padding:9px 10px;border-radius:10px;border:1px solid var(--border-2);background:var(--bg);color:var(--text);font-family:inherit;font-size:13.5px">
+        </label>
+        <input class="lab" id="revex-label" type="text" placeholder="Ex. Cadeau de mamie, vente vélo…" style="flex:2;min-width:170px">
+        <input class="mont" id="revex-montant" type="text" inputmode="decimal" placeholder="0">
+        <button class="btn btn-grad btn-sm" data-action="revex-add" style="white-space:nowrap">＋ Ajouter</button>
+      </div>
+      <div style="margin-top:12px">
+      ${( () => {
+        const mois = UI.revexMois || UI.month;
+        const entrees = txIn(mois).filter(t=>t.cat==="revenu");
+        const total = entrees.reduce((s,t)=>s+(+t.montant||0),0);
+        return entrees.length
+          ? entrees.map(t=>`
+            <div class="row">
+              <span style="color:var(--green);font-weight:700">＋</span>
+              <input class="lab" type="text" value="${esc(t.label)}" disabled style="opacity:.85">
+              <span class="mont" style="font-weight:700;color:var(--green)">${fmt0.format(+t.montant||0)}</span>
+              <button class="icon-btn" data-action="del-tx" data-id="${t.id}" title="Supprimer">✕</button>
+            </div>`).join("") + `<div class="total-line"><span>Total ${esc(monthLabel(mois))}</span><span style="color:var(--green)">+${fmt0.format(total)}</span></div>`
+          : `<div class="empty" style="padding:12px">Aucune rentrée exceptionnelle en ${esc(monthLabel(mois))}.</div>`;
+      })() }
+      </div>
+    </div>
+
+    <div class="card settings-card">
       <h3 style="font-size:16px">Charges fixes — détail</h3>
       ${rows || `<div class="empty">Aucune charge fixe pour l'instant.</div>`}
       <div class="total-line"><span>Total des charges fixes</span><span>${fmt0.format(chg)}</span></div>
@@ -1664,12 +1695,12 @@ function renderSettings(){
       ${(S.rules.map(r=>`
         <div class="row">
           <input class="lab" type="text" value="${esc(r.mot)}" data-rule="${r.id}" data-rfield="mot" placeholder="Mot-clé">
-          <select class="cat-sel" data-rule="${r.id}" data-rfield="cat">${cats().map(c=>`<option value="${c.id}"${r.cat===c.id?" selected":""}>${esc(c.label)}</option>`).join("")}</select>
+          <select class="cat-sel" data-rule="${r.id}" data-rfield="cat">${cats().filter(c=>c.id!=="revenu").map(c=>`<option value="${c.id}"${r.cat===c.id?" selected":""}>${esc(c.label)}</option>`).join("")}</select>
           <button class="icon-btn" data-action="del-rule" data-id="${r.id}" title="Supprimer">✕</button>
         </div>`).join("")) || `<div class="empty" style="padding:12px">Aucune règle personnelle — ajoutez vos commerçants récurrents.</div>`}
       <div class="row">
         <input class="lab" id="new-rule-mot" type="text" placeholder="Mot-clé (ex. Biocoop, Mon traiteur…)">
-        <select class="cat-sel" id="new-rule-cat">${cats().map(c=>`<option value="${c.id}">${esc(c.label)}</option>`).join("")}</select>
+        <select class="cat-sel" id="new-rule-cat">${cats().filter(c=>c.id!=="revenu").map(c=>`<option value="${c.id}">${esc(c.label)}</option>`).join("")}</select>
         <button class="btn btn-ghost btn-sm" data-action="add-rule" style="white-space:nowrap">＋ Ajouter la règle</button>
       </div>
   </section>`;
@@ -2669,6 +2700,16 @@ document.getElementById("app").addEventListener("click", async e=>{
   else if(a==="month-prev"){ UI.month = shiftMonth(UI.month,-1); render(); }
   else if(a==="month-next"){ UI.month = shiftMonth(UI.month, 1); render(); }
   else if(a==="period"){ UI.period = +el.dataset.n || 6; render(); }
+  else if(a==="revex-add"){
+    const mois = (document.getElementById("revex-mois")?.value || UI.revexMois || UI.month);
+    const label = (document.getElementById("revex-label")?.value || "").trim() || "Rentrée exceptionnelle";
+    const v = parseAmount(document.getElementById("revex-montant")?.value || "");
+    if(v===null || v<=0){ toast("Indiquez un montant supérieur à 0."); return; }
+    const date = mois === monthKey(new Date()) ? todayISO() : mois + "-15";
+    S.transactions.push({id:uid(), date, label, montant:v, cat:"revenu"});
+    UI.revexMois = mois; save(); render();
+    toast("🎁 " + fmt0.format(v) + " ajoutés au reste à vivre de " + monthLabel(mois) + ".");
+  }
   else if(a==="del-tx"){
     S.transactions = S.transactions.filter(t=>t.id!==el.dataset.id);
     save(); render(); toast("Transaction supprimée.");
@@ -3110,6 +3151,7 @@ document.getElementById("app").addEventListener("change", e=>{
     r.montant = v; save(); render(); return;
   }
   if(el.dataset.set==="partnerNom"){ S.partnerNom = el.value; save(); return; }
+  if(el.id==="revex-mois"){ UI.revexMois = el.value || UI.month; render(); return; }
   if(el.id==="partner-file" && el.files && el.files[0]){
     const f = el.files[0];
     const rd = new FileReader();
