@@ -6,9 +6,51 @@
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0b0b12">
 <meta name="description" content="Mon Budget — le budget mensuel 100 % privé : enveloppes récurrentes, import de relevés, objectifs d'épargne. Hors-ligne, connexion email optionnelle, vos données restent chez vous.">
+<meta name="keywords" content="application budget, méthode des enveloppes, budget sans abonnement, budget sans connexion bancaire, alternative YNAB France, budget familial gratuit, gestion budget mensuel">
+<meta name="author" content="Mon Budget">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://bonjourmonbudget-lab.github.io/mon-budget/">
+<!-- Partage réseaux sociaux : titre + aperçu quand le lien est partagé -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Mon Budget">
+<meta property="og:title" content="Mon Budget — 19 € à vie, sans abonnement, sans connexion bancaire">
+<meta property="og:description" content="La méthode des enveloppes automatisée. Vos données restent sur votre appareil. Version gratuite complète — installez-la en 10 secondes.">
+<meta property="og:url" content="https://bonjourmonbudget-lab.github.io/mon-budget/">
+<meta property="og:image" content="https://bonjourmonbudget-lab.github.io/mon-budget/apercu.png">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mon Budget — 19 € à vie, sans abonnement">
+<meta name="twitter:description" content="La méthode des enveloppes automatisée. Vos données restent sur votre appareil.">
+<meta name="twitter:image" content="https://bonjourmonbudget-lab.github.io/mon-budget/apercu.png">
+<!-- Données structurées pour Google -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Mon Budget",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web, Windows, macOS, Linux, Android, iOS",
+  "inLanguage": "fr-FR",
+  "description": "Application de budget en méthode des enveloppes, 100 % locale : aucune connexion bancaire, données sur votre appareil, fonctionne hors-ligne. Version gratuite et licence à vie à 19 €.",
+  "offers": {
+    "@type": "Offer",
+    "price": "19.00",
+    "priceCurrency": "EUR",
+    "description": "Licence à vie Mon Budget Plus — sans abonnement"
+  }
+}
+</script>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icon-192.png">
 <title>Mon Budget — Le budget qui ne connecte jamais votre banque</title>
+<!-- Compteur de visites (Analytics via Firebase) — page marketing uniquement, l'application ne mesure rien -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-P31JFZ6KP1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-P31JFZ6KP1');
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -281,7 +323,7 @@
 </main>
 
 <footer class="wrap">
-  © Mon Budget 2026 · Vos données restent sur votre machine · <a href="app.html">Ouvrir l'application</a>
+  © Mon Budget 2026 · Vos données restent sur votre machine · <a href="app.html">Ouvrir l'application</a> · <a href="methode-enveloppes.html">Guide : la méthode des enveloppes</a>
 </footer>
 
 <button id="haut-page" title="Retour en haut de page" onclick="window.scrollTo({top:0,behavior:'smooth'})">⬆</button>
@@ -382,6 +424,24 @@ document.getElementById("waitlist-form").addEventListener("submit", async (e) =>
     msg.textContent = "Impossible d'enregistrer l'email pour le moment.";
   }
 });
+
+/* ---- Mesure campagne : source d'arrivée + clics clés ---- */
+(function(){
+  const src = new URLSearchParams(location.search).get("utm_source") || "direct";
+  if (typeof gtag === "function") gtag("event", "visite_vitrine", { source: src });
+  document.addEventListener("click", e => {
+    if (typeof gtag !== "function") return;
+    const a = e.target.closest("a[href]");
+    if (!a) return;
+    const href = a.getAttribute("href") || "";
+    if (href.indexOf("app.html") > -1) gtag("event", "clic_ouvrir_app", { source: src });
+    else if (href.indexOf("checkout") > -1) gtag("event", "clic_checkout", { source: src });
+  });
+  const buy = document.querySelector("[data-buy='plus']");
+  if (buy) buy.addEventListener("click", () => {
+    if (typeof gtag === "function") gtag("event", "clic_checkout", { source: src });
+  });
+})();
 </script>
 </body>
 </html>
