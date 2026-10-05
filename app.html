@@ -282,6 +282,16 @@
   #compte-pop[hidden]{display:none}
   @media (max-width:720px){ #btn-compte .mail{display:none} #compte-pop{top:64px} }
 
+  /* Mur d'accès : compte gratuit requis pour ouvrir l'application */
+  #mur-compte{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:20px}
+  #mur-compte[hidden]{display:none}
+  #mur-compte .mur-fond{position:absolute;inset:0;background:rgba(7,7,13,.78);backdrop-filter:blur(9px)}
+  #mur-compte .mur-carte{position:relative;width:min(430px,100%);max-height:92vh;overflow:auto;background:var(--card);border:1px solid var(--border-2);border-radius:18px;padding:28px;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+  #mur-compte .mur-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;margin-bottom:14px}
+  #mur-compte h2{font-size:22px;letter-spacing:-.3px;margin-bottom:8px}
+  #mur-compte .mur-points{display:flex;flex-direction:column;gap:7px;margin:14px 0 18px;font-size:13px;color:var(--muted)}
+  #mur-compte .mur-points b{color:var(--text)}
+
   /* Bouton retour en haut — à droite, centré verticalement */
   #haut-page{
     position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:45;width:48px;height:48px;
@@ -437,6 +447,35 @@
 </header>
 
 <div id="compte-pop" hidden></div>
+
+<div id="mur-compte" hidden>
+  <div class="mur-fond"></div>
+  <div class="mur-carte">
+    <div class="mur-logo">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>
+      Mon&nbsp;<span class="grad-text">Budget</span>
+    </div>
+    <h2>Créez votre compte gratuit pour ouvrir l'application</h2>
+    <div class="mur-points">
+      <span>✓ <b>30 secondes</b> — email, mot de passe, validation par email</span>
+      <span>✓ <b>Vos données budgétaires restent sur votre appareil</b> — le compte ne retient que votre email</span>
+      <span>✓ <b>Sans abonnement</b> — version gratuite complète, licence à vie 19 € pour le couple et la famille</span>
+    </div>
+    <div class="row" style="flex-wrap:wrap;gap:8px">
+      <input class="lab" id="mur-email" type="email" placeholder="votre@email.fr" style="flex:1;min-width:150px">
+      <input class="lab" id="mur-mdp" type="password" placeholder="Mot de passe (6 car. min.)" style="flex:1;min-width:150px">
+    </div>
+    <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-grad btn-sm" data-action="mur-login">Se connecter</button>
+      <button class="btn btn-ghost btn-sm" data-action="mur-signup">Créer mon compte</button>
+    </div>
+    <div style="margin-top:10px;text-align:center">
+      <a class="linklike" data-action="mur-reset" style="font-size:12px;color:var(--muted)">Mot de passe oublié ?</a>
+    </div>
+    <div id="mur-status" style="margin-top:8px;font-size:12px;min-height:16px;color:var(--muted)"></div>
+    <a id="mur-continuer" data-action="mur-continuer" hidden style="display:block;margin-top:12px;text-align:center;font-size:12px;color:var(--muted-2)">Service de connexion inaccessible — continuer sans compte</a>
+  </div>
+</div>
 
 <main id="app"></main>
 
@@ -3350,56 +3389,98 @@ function renderCompte(){
   }
   if(mbPopOuverte()) renderComptePop();
 }
-function mbMsg(txt, err){
-  const el = document.getElementById("compte-status");
-  if(el){ el.textContent = txt || ""; el.style.color = err ? "#ef4444" : "var(--muted)"; }
-  else if(txt) toast(txt);
+function mbMsg(txt, err){ mbMsgPour("compte")(txt, err); }
+function mbMsgPour(prefixe){
+  return (txt, err) => {
+    const el = document.getElementById(prefixe + "-status");
+    if(el){ el.textContent = txt || ""; el.style.color = err ? "#ef4444" : "var(--muted)"; }
+    else if(txt) toast(txt);
+  };
+}
+function mbChamps(prefixe){
+  return {
+    email: (document.getElementById(prefixe + "-email")?.value || "").trim(),
+    mdp: document.getElementById(prefixe + "-mdp")?.value || ""
+  };
+}
+async function mbFaireLogin(prefixe){
+  const {email, mdp} = mbChamps(prefixe);
+  const msg = mbMsgPour(prefixe);
+  if(!mbEmailOk(email) || mdp.length < 6){ msg("Email valide + mot de passe de 6 caractères minimum.", true); return; }
+  msg("⏳ Connexion en cours…");
+  try{
+    await firebase.auth().signInWithEmailAndPassword(email, mdp);
+  }catch(err){
+    const code = (err && err.code) || "";
+    if(code === "auth/user-not-found" || code === "auth/invalid-credential" || code === "auth/invalid-login-credentials"){
+      msg("Aucun compte avec cet email — cliquez « Créer mon compte ».", true);
+    }
+    else if(code === "auth/wrong-password"){ msg("Mot de passe incorrect — ou « Mot de passe oublié ? ».", true); }
+    else if(code === "auth/too-many-requests"){ msg("Trop d'essais — réessayez dans quelques minutes.", true); }
+    else msg("Erreur : " + ((err && err.message) || "connexion impossible"), true);
+  }
+}
+async function mbFaireSignup(prefixe){
+  const {email, mdp} = mbChamps(prefixe);
+  const msg = mbMsgPour(prefixe);
+  if(!mbEmailOk(email) || mdp.length < 6){ msg("Email valide + mot de passe de 6 caractères minimum.", true); return; }
+  msg("⏳ Création du compte…");
+  try{
+    const cred = await firebase.auth().createUserWithEmailAndPassword(email, mdp);
+    try{ await cred.user.sendEmailVerification(); }catch(_){}
+    await firebase.auth().signOut();
+    msg("📧 Compte créé ! Un email de validation a été envoyé à " + email + " — cliquez sur le lien qu'il contient, puis connectez-vous. (Spams si absent.)");
+  }catch(err){
+    const code = (err && err.code) || "";
+    msg(code === "auth/email-already-in-use" ? "Cet email a déjà un compte — connectez-vous (ou « Mot de passe oublié ? »)." :
+          code === "auth/weak-password" ? "Mot de passe trop court (6 caractères minimum)." :
+          code === "auth/invalid-email" ? "Adresse email invalide." :
+          "Erreur : " + ((err && err.message) || "création impossible"), true);
+  }
+}
+async function mbFaireReset(prefixe){
+  const {email} = mbChamps(prefixe);
+  const msg = mbMsgPour(prefixe);
+  if(!mbEmailOk(email)){ msg("Entrez votre email dans le champ ci-dessus, puis recliquez « Mot de passe oublié ».", true); return; }
+  msg("⏳ Envoi de l'email de réinitialisation…");
+  try{
+    await firebase.auth().sendPasswordResetEmail(email);
+    msg("📧 Email envoyé à " + email + " — cliquez sur le lien qu'il contient pour choisir un nouveau mot de passe, puis reconnectez-vous.");
+  }catch(err){
+    const code = (err && err.code) || "";
+    msg(code === "auth/user-not-found" ? "Aucun compte avec cet email — créez-le d'abord." :
+          "Erreur : " + ((err && err.message) || "envoi impossible"), true);
+  }
 }
 
-/* Gestionnaire au niveau document : le bouton du bandeau et le panneau
+/* Mur d'accès : l'application exige un compte (gratuit) pour s'ouvrir */
+let mbInitFait = false;
+function majMur(){
+  const mur = document.getElementById("mur-compte");
+  if(!mur) return;
+  const contourne = sessionStorage.getItem("mbMurPasse") === "1";
+  mur.hidden = !!MB_user || contourne || !mbInitFait;
+  const lien = document.getElementById("mur-continuer");
+  if(lien) lien.hidden = mbDispo();
+}
+function masquerMur(){
+  try{ sessionStorage.setItem("mbMurPasse", "1"); }catch(_){}
+  const m = document.getElementById("mur-compte");
+  if(m) m.hidden = true;
+}
+
+/* Gestionnaire au niveau document : le bouton du bandeau, le panneau et le mur
    sont en dehors de #app, un écouteur sur #app ne verrait jamais leurs clics */
 document.addEventListener("click", async e=>{
-  const el = e.target.closest('[data-action^="compte-"]');
+  const el = e.target.closest('[data-action^="compte-"], [data-action^="mur-"]');
   if(!el) return;
   if(!mbDispo()){ toast("Connexion au compte indisponible hors-ligne."); return; }
   const a = el.dataset.action;
   if(a==="compte-open"){ mbPopToggle(true); return; }
   if(a==="compte-goto-settings"){ mbPopToggle(false); UI.tab = "compte"; render(); return; }
-  if(a==="compte-login"){
-    const email = (document.getElementById("compte-email")?.value || "").trim();
-    const mdp = document.getElementById("compte-mdp")?.value || "";
-    if(!mbEmailOk(email) || mdp.length < 6){ mbMsg("Email valide + mot de passe de 6 caractères minimum.", true); return; }
-    mbMsg("⏳ Connexion en cours…");
-    try{
-      await firebase.auth().signInWithEmailAndPassword(email, mdp);
-    }catch(err){
-      const code = (err && err.code) || "";
-      if(code === "auth/user-not-found" || code === "auth/invalid-credential" || code === "auth/invalid-login-credentials"){
-        mbMsg("Aucun compte avec cet email — cliquez « Créer mon compte ».", true);
-      }
-      else if(code === "auth/wrong-password"){ mbMsg("Mot de passe incorrect.", true); }
-      else if(code === "auth/too-many-requests"){ mbMsg("Trop d'essais — réessayez dans quelques minutes.", true); }
-      else mbMsg("Erreur : " + ((err && err.message) || "connexion impossible"), true);
-    }
-  }
-  else if(a==="compte-signup"){
-    const email = (document.getElementById("compte-email")?.value || "").trim();
-    const mdp = document.getElementById("compte-mdp")?.value || "";
-    if(!mbEmailOk(email) || mdp.length < 6){ mbMsg("Email valide + mot de passe de 6 caractères minimum.", true); return; }
-    mbMsg("⏳ Création du compte…");
-    try{
-      const cred = await firebase.auth().createUserWithEmailAndPassword(email, mdp);
-      try{ await cred.user.sendEmailVerification(); }catch(_){}
-      await firebase.auth().signOut();
-      mbMsg("📧 Compte créé ! Un email de validation a été envoyé à " + email + " — cliquez sur le lien qu'il contient, puis connectez-vous. (Spams si absent.)");
-    }catch(err){
-      const code = (err && err.code) || "";
-      mbMsg(code === "auth/email-already-in-use" ? "Cet email a déjà un compte — connectez-vous." :
-            code === "auth/weak-password" ? "Mot de passe trop court (6 caractères minimum)." :
-            code === "auth/invalid-email" ? "Adresse email invalide." :
-            "Erreur : " + ((err && err.message) || "création impossible"), true);
-    }
-  }
+  if(a==="compte-login" || a==="mur-login"){ mbFaireLogin(a === "mur-login" ? "mur" : "compte"); return; }
+  if(a==="compte-signup" || a==="mur-signup"){ mbFaireSignup(a === "mur-signup" ? "mur" : "compte"); return; }
+  if(a==="compte-reset" || a==="mur-reset"){ mbFaireReset(a === "mur-reset" ? "mur" : "compte"); return; }
   else if(a==="compte-resend"){
     if(!MB_user){ return; }
     mbMsg("⏳ Envoi de l'email de validation…");
@@ -3408,32 +3489,25 @@ document.addEventListener("click", async e=>{
       mbMsg("📧 Email de validation renvoyé à " + MB_user.email + " — pensez aux spams.");
     }catch(_){ mbMsg("Envoi impossible pour le moment — réessayez dans quelques minutes.", true); }
   }
-  else if(a==="compte-reset"){
-    const email = (document.getElementById("compte-email")?.value || "").trim();
-    if(!mbEmailOk(email)){ mbMsg("Entrez votre email dans le champ ci-dessus, puis recliquez « Mot de passe oublié ».", true); return; }
-    mbMsg("⏳ Envoi de l'email de réinitialisation…");
-    try{
-      await firebase.auth().sendPasswordResetEmail(email);
-      mbMsg("📧 Email envoyé à " + email + " — cliquez sur le lien qu'il contient pour choisir un nouveau mot de passe, puis reconnectez-vous.");
-    }catch(err){
-      const code = (err && err.code) || "";
-      mbMsg(code === "auth/user-not-found" ? "Aucun compte avec cet email — créez-le d'abord." :
-            "Erreur : " + ((err && err.message) || "envoi impossible"), true);
-    }
-  }
   else if(a==="compte-logout"){
     try{ await firebase.auth().signOut(); toast("Déconnecté. À bientôt !"); }
     catch(_){ toast("Déconnexion impossible pour le moment."); }
   }
+  else if(a==="mur-continuer"){ masquerMur(); return; }
 });
 
 window.addEventListener("DOMContentLoaded", ()=>{
   try{
+    // Si le SDK Firebase n'a pas pu charger (bloqueur de pub, CDN coupé) :
+    // le mur ne peut pas s'authentifier → filet de sécurité après 8 s
+    setTimeout(()=>{ mbInitFait = true; majMur(); }, 8000);
     if(!mbDispo()) return;
     firebase.initializeApp(MB_FB);
     firebase.auth().onAuthStateChanged(u=>{
       const avant = MB_user;
       MB_user = u;
+      mbInitFait = true;
+      majMur();
       renderCompte();
       if(u && !avant) toast("✅ Connecté : " + u.email);
       if(!u && avant) toast("Déconnecté.");
