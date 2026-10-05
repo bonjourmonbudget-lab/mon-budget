@@ -430,14 +430,14 @@
   </a>
   <nav id="nav">
     <button data-tab="dash">Tableau de bord</button>
-    <button data-tab="tx">Transactions</button>
+    <button data-tab="tx">Vos dépenses</button>
+    <button data-tab="settings">Vos revenus</button>
     <button data-tab="bilan">Bilan</button>
     <button data-tab="budget">Budget</button>
     <button data-tab="goals">Objectifs</button>
     <button data-tab="couple">Couple</button>
     <button data-tab="famille">Famille</button>
     <button data-tab="plan">Plan d'action</button>
-    <button data-tab="settings">Paramètres</button>
     <button data-tab="compte">Compte</button>
     <button id="btn-undo" title="Annuler la dernière action" style="display:none">↩ Annuler</button>
   </nav>
@@ -1214,7 +1214,7 @@ function renderDash(){
     <div class="card kpi">
       <div class="lbl">Charges fixes</div>
       <div class="val">${fmt0.format(chg)}</div>
-      <div class="sub">${rev>0?Math.round(chg/rev*100):0} % du revenu · détail dans Paramètres</div>
+      <div class="sub">${rev>0?Math.round(chg/rev*100):0} % du revenu · détail dans Vos revenus</div>
     </div>
     <div class="card kpi">
       <div class="lbl">Reste à vivre</div>
@@ -1252,7 +1252,7 @@ function renderDash(){
           <div class="fx-item" title="${esc(c.label)} — ${esc(fc.label)}">${dot(fc.color)}<span class="lblx">${esc(c.label||"Sans nom")}</span><span class="amt">${fmt0.format(+c.montant||0)}</span></div>`;}).join("") || `<div class="fx-item"><span class="lblx" style="color:var(--muted-2)">Aucune charge fixe</span></div>`}
         </div>
         <div class="nums"><span>Total prélevé chaque mois</span><b>${fmt0.format(chg)}</b></div>
-        <div class="nums"><span class="hint" style="font-size:12px">Modifiable dans <a class="linklike" data-action="goto" data-tab="settings">Paramètres</a></span></div>
+        <div class="nums"><span class="hint" style="font-size:12px">Modifiable dans <a class="linklike" data-action="goto" data-tab="settings">Vos revenus</a></span></div>
       </div>
       <div class="grid-cats">
       ${cats().filter(c=>c.id!=="revenu").map(c=>{
@@ -1329,7 +1329,7 @@ function renderTx(){
   return `
   <section class="hero">
     <h1><span class="grad-text">Transactions</span> du mois</h1>
-    <p class="sub">Saisissez vos dépenses variables et vos virements d'épargne. Les charges fixes récurrentes sont gérées dans Paramètres.</p>
+    <p class="sub">Saisissez vos dépenses variables et vos virements d'épargne. Les charges fixes récurrentes sont gérées dans Vos revenus.</p>
   </section>
 
   <section class="section">
@@ -1493,7 +1493,7 @@ function renderPlan(){
   return `
   <section class="hero">
     <h1>Plan d'action — <span class="grad-text">3 étapes chiffrées</span></h1>
-    <p class="sub">Objectif actuel : <b>économiser ${fmt0.format(obj)} de plus par mois</b> (${Math.round(objPct)} % du revenu). Les chiffres se recalculent depuis vos Paramètres.</p>
+    <p class="sub">Objectif actuel : <b>économiser ${fmt0.format(obj)} de plus par mois</b> (${Math.round(objPct)} % du revenu). Les chiffres se recalculent depuis l'onglet Vos revenus.</p>
     <div class="toolbar">
       <div class="chip">Progression&nbsp;<b>${done}/${totalChecks}</b>&nbsp;actions validées</div>
       <div style="width:220px">${bar(totalChecks?done/totalChecks*100:0)}</div>
@@ -1546,7 +1546,7 @@ function renderPlan(){
 }
 
 const CHECK_LABELS = {
-  c1:"Lister toutes mes charges fixes dans Paramètres (loyer, crédits, abonnements…)",
+  c1:"Lister toutes mes charges fixes dans Vos revenus (loyer, crédits, abonnements…)",
   c2:"Résilier ou renégocier 2 abonnements peu utilisés",
   c3:"Définir mes enveloppes dans l'onglet Budget",
   c4:"Ouvrir un compte épargne séparé (Livret A, LDDS ou compte à terme)",
@@ -2177,7 +2177,7 @@ function renderGoals(){
   <section class="hero">
     <h1>Objectifs & <span class="grad-text">fonds d'urgence</span></h1>
     <p class="sub">Le <b>pot d'épargne</b> = la somme de tous vos virements d'épargne (transactions catégorie « Épargne & projets »). Vous le répartissez librement entre vos projets et le fonds d'urgence. 💡 Si le pot est vide, attribuer un montant crée automatiquement le virement d'épargne correspondant — rien ne sort de votre compte, c'est une répartition sur le papier.</p>
-    <p class="sub" style="margin-top:8px">↩ <b>Pour retirer une épargne déjà comptée</b> (ex. vos 50 € de test ou un virement saisi en double) : onglet <a class="linklike" data-action="goto" data-tab="tx">Transactions</a> → retrouvez la ligne « Virement épargne » → ✕ pour la supprimer. Le pot et le reste à dépenser se recalculent seuls.</p>
+    <p class="sub" style="margin-top:8px">↩ <b>Pour retirer une épargne déjà comptée</b> (ex. vos 50 € de test ou un virement saisi en double) : onglet <a class="linklike" data-action="goto" data-tab="tx">Vos dépenses</a> → retrouvez la ligne « Virement épargne » → ✕ pour la supprimer. Le pot et le reste à dépenser se recalculent seuls.</p>
   </section>
 
   <section class="kpis section">
@@ -2253,7 +2253,7 @@ function renderCouple(){
       <div class="card" style="text-align:center;padding:44px 30px">
         <div style="font-size:36px">🔒</div>
         <h3 style="margin-top:12px;font-size:17px">Réservé à Mon Budget Plus</h3>
-        <p style="color:var(--muted);font-size:13.5px;margin:10px 0 18px">Activez votre licence dans Paramètres, ou découvrez les tarifs sur la vitrine.</p>
+        <p style="color:var(--muted);font-size:13.5px;margin:10px 0 18px">Activez votre licence dans l'onglet Compte, ou découvrez les tarifs sur la vitrine.</p>
         <div class="row" style="justify-content:center;gap:10px;flex-wrap:wrap">
           <button class="btn btn-grad" data-action="goto-plus">Activer ma licence</button>
           <a class="btn btn-ghost" href="index.html#tarifs">Voir les tarifs</a>
@@ -2309,7 +2309,7 @@ function renderCouple(){
     <div class="card" style="text-align:center;padding:36px 24px">
       <div style="font-size:32px">👥</div>
       <h3 style="margin-top:10px;font-size:16px">Importer le budget de votre partenaire</h3>
-      <p style="color:var(--muted);font-size:13px;margin:10px auto 16px;max-width:460px">Sur l'appareil de votre partenaire, deux options : sa <b>sauvegarde JSON</b> (Paramètres → Données → ⬇ Sauvegarde JSON — tout le budget) ou un <b>CSV de ses transactions</b> (Transactions → Exporter en CSV — dépenses seules). Revenez ici et importez le fichier — les données restent sur votre machine.</p>
+      <p style="color:var(--muted);font-size:13px;margin:10px auto 16px;max-width:460px">Sur l'appareil de votre partenaire, deux options : sa <b>sauvegarde JSON</b> (Compte → Données → ⬇ Sauvegarde JSON — tout le budget) ou un <b>CSV de ses transactions</b> (Vos dépenses → Exporter en CSV — dépenses seules). Revenez ici et importez le fichier — les données restent sur votre machine.</p>
       <input type="file" id="partner-file" accept=".json,.csv,.txt,application/json,text/csv" style="display:none">
       <button class="btn btn-grad" data-action="partner-open">⬆ Importer (JSON ou CSV)</button>
     </div>` : `
@@ -2393,7 +2393,7 @@ function renderFamille(){
       <div class="card" style="text-align:center;padding:44px 30px">
         <div style="font-size:36px">🔒</div>
         <h3 style="margin-top:12px;font-size:17px">Réservé à Mon Budget Plus</h3>
-        <p style="color:var(--muted);font-size:13.5px;margin:10px 0 18px">Activez votre licence dans Paramètres, ou découvrez les tarifs sur la vitrine.</p>
+        <p style="color:var(--muted);font-size:13.5px;margin:10px 0 18px">Activez votre licence dans l'onglet Compte, ou découvrez les tarifs sur la vitrine.</p>
         <div class="row" style="justify-content:center;gap:10px;flex-wrap:wrap">
           <button class="btn btn-grad" data-action="goto-plus">Activer ma licence</button>
           <a class="btn btn-ghost" href="index.html#tarifs">Voir les tarifs</a>
@@ -2609,7 +2609,7 @@ function welcomeHtml(){
       <h3 style="font-size:20px;font-weight:800;margin:14px 0 10px">Bienvenue dans Mon Budget</h3>
       <p style="color:var(--muted);font-size:13.5px">Vos données resteront sur votre machine, jamais sur un serveur. Deux façons de commencer :</p>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:22px">
-        <button class="btn btn-grad" data-action="welcome-zero">🚀 Partir de zéro (assistant Paramètres)</button>
+        <button class="btn btn-grad" data-action="welcome-zero">🚀 Partir de zéro (assistant Vos revenus)</button>
         <button class="btn btn-ghost" data-action="welcome-demo">📊 Découvrir avec les données de démo</button>
       </div>
       <p style="color:var(--muted-2);font-size:12px;margin-top:16px">Vous pourrez changer d'avis : tout est modifiable et exportable.</p>

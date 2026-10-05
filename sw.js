@@ -1,5 +1,5 @@
 /* Mon Budget — service worker : fonctionne hors-ligne (vitrine + application) */
-const CACHE = "monbudget-v21";
+const CACHE = "monbudget-v22";
 const ASSETS = ["./", "./index.html", "./app.html", "./jeu.html", "./methode-enveloppes.html", "./alternative-applis-budget.html", "./budget-a-deux.html", "./budget-enfants.html", "./fonds-urgence.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./apercu.png"];
 
 self.addEventListener("install", (e) => {
