@@ -472,6 +472,7 @@ const CATS = [
   {id:"shopping",     label:"Shopping & maison",  color:"#22d3ee", bucket:"envies"},
   {id:"autre",        label:"Autre",              color:"#9ca3af", bucket:"envies"},
   {id:"epargne",      label:"Épargne & projets",  color:"#c084fc", bucket:"epargne"},
+  {id:"revenu",       label:"Cadeau / rentrée",   color:"#4ade80", bucket:null},
 ];
 const cats = () => (Array.isArray(S.cats) && S.cats.length ? S.cats : CATS);
 const catOf = id => cats().find(c=>c.id===id) || {id, label:id, color:"#9ca3af", bucket:"envies"};
@@ -606,6 +607,10 @@ function normalize(st){
   if(!st.actifBudget) st.actifBudget = "moi";
   if(!st.settings.partage) st.settings.partage = {besoins:50, envies:30, epargne:20};
   if(typeof st.settings.centimes !== "boolean") st.settings.centimes = false;
+  // Migration : catégorie « Cadeau / rentrée » pour les comptes créés avant son arrivée
+  if(Array.isArray(st.cats) && !st.cats.some(c=>c.id==="revenu")){
+    st.cats.push({id:"revenu", label:"Cadeau / rentrée", color:"#4ade80", bucket:null});
+  }
   for(const c of (st.settings.chargesFixes||[])){
     if(!c.cat) c.cat = guessFixedCat(c.label);
   }
@@ -850,8 +855,11 @@ const actifDans = (item, m) => !item.depuis || !m || item.depuis <= m;
 const chargesTotal = (m) => S.settings.chargesFixes.reduce((s,c)=>s+(actifDans(c,m)?(+c.montant||0):0),0);
 const revenuTotal  = (m) => S.settings.revenus.reduce((s,r)=>s+(actifDans(r,m)?(+r.montant||0):0),0);
 const txIn = month => S.transactions.filter(t => (t.date||"").slice(0,7) === month);
-const spentVar = month => txIn(month).filter(t => t.cat!=="epargne").reduce((s,t)=>s+(+t.montant||0),0);
+const spentVar = month => txIn(month).filter(t => t.cat!=="epargne" && t.cat!=="revenu").reduce((s,t)=>s+(+t.montant||0),0);
 const savedIn  = month => txIn(month).filter(t => t.cat==="epargne").reduce((s,t)=>s+(+t.montant||0),0);
+/* Rentrées exceptionnelles du mois (cadeaux, liquide reçu, primes ponctuelles) :
+   elles gonflent le reste à vivre du mois concerné, sans toucher aux revenus récurrents. */
+const revIn    = month => txIn(month).filter(t => t.cat==="revenu").reduce((s,t)=>s+(+t.montant||0),0);
 const rav      = (m) => revenuTotal(m) - chargesTotal(m);
 const spentByCat = (month,id) => txIn(month).filter(t=>t.cat===id).reduce((s,t)=>s+(+t.montant||0),0);
 const budgetOf = id => +S.budgets[id] || 0;
@@ -1165,11 +1173,11 @@ function toast(msg){
 
 function renderDash(){
   const m = UI.month;
-  const rev = revenuTotal(m), chg = chargesTotal(m), varSp = spentVar(m), ep = savedIn(m);
+  const rev = revenuTotal(m), chg = chargesTotal(m), varSp = spentVar(m), ep = savedIn(m), revExc = revIn(m);
   const r = rav(m);
   const objPct = S.settings.objectif>0 ? ep/S.settings.objectif*100 : 0;
 
-  const depassed = cats().filter(c=>c.id!=="epargne" && dispoOf(c.id,m)>0 && spentByCat(m,c.id) > dispoOf(c.id,m));
+  const depassed = cats().filter(c=>c.id!=="epargne" && c.id!=="revenu" && dispoOf(c.id,m)>0 && spentByCat(m,c.id) > dispoOf(c.id,m));
   const alertHtml = depassed.length ? `<div class="alert-strip">⚠️ <div><b>${depassed.length} budget${depassed.length>1?"s":""} dépassé${depassed.length>1?"s":""} en ${esc(monthLabel(m))}</b> — ${depassed.map(c=>`${esc(c.label)} (+${fmt0.format(spentByCat(m,c.id)-dispoOf(c.id,m))})`).join(", ")}. Vérifiez l'onglet Budget pour réajuster les enveloppes.</div></div>` : "";
 
   const txSorted = txIn(m).slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
@@ -1212,9 +1220,10 @@ function renderDash(){
       <div class="lbl">Reste à vivre</div>
       <div class="val ${r<0?"neg":""}">${fmt0.format(r)}</div>
       <div class="sub">revenu net − charges fixes</div>
-      <div class="foot">${bar(r>0?(varSp+ep)/r*100:0)}</div>
-      <div class="sub" style="margin-top:10px">💰 Reste à dépenser ce mois : <b style="color:var(--text)">${fmt0.format(Math.max(0,r-varSp-ep))}</b></div>
+      <div class="foot">${bar((r+revExc)>0?(varSp+ep)/(r+revExc)*100:0)}</div>
+      <div class="sub" style="margin-top:10px">💰 Reste à dépenser ce mois : <b style="color:var(--text)">${fmt0.format(Math.max(0,r+revExc-varSp-ep))}</b></div>
       <div class="sub" style="margin-top:2px">(${fmt0.format(varSp)} dépensés + ${fmt0.format(ep)} épargnés — jauge : argent déjà engagé)</div>
+      ${revExc>0?`<div class="sub" style="margin-top:2px">🎁 dont ${fmt0.format(revExc)} de rentrées exceptionnelles</div>`:""}
     </div>
     <div class="card kpi">
       <div class="lbl">Épargne du mois</div>
@@ -1246,7 +1255,7 @@ function renderDash(){
         <div class="nums"><span class="hint" style="font-size:12px">Modifiable dans <a class="linklike" data-action="goto" data-tab="settings">Paramètres</a></span></div>
       </div>
       <div class="grid-cats">
-      ${cats().map(c=>{
+      ${cats().filter(c=>c.id!=="revenu").map(c=>{
         const sp = spentByCat(m,c.id), b = budgetOf(c.id), d = dispoOf(c.id,m), ro = d - b;
         return `<div class="card cat-card cat-click" data-action="open-cat" data-cat="${c.id}" title="Voir les transactions de cette enveloppe">
           <div class="row1">${dot(c.color)}<span class="name">${esc(c.label)}</span>${badgeFor(sp,d)}</div>
@@ -1385,7 +1394,7 @@ function renderBudget(){
     </div>`;
   }).join("");
 
-  const envelopes = cats().map(c=>{
+  const envelopes = cats().filter(c=>c.id!=="revenu").map(c=>{
     const sp = spentByCat(m,c.id), b = budgetOf(c.id), d = dispoOf(c.id,m), ro = d - b;
     const bdg = badgeFor(sp,d);
     return `<div class="card envelope">
@@ -1454,7 +1463,7 @@ function renderPlan(){
   const objPct = rev>0 ? obj/rev*100 : 0;
   const apresEpargne = rev - chg - obj;
 
-  const varTx = txIn(m).filter(t=>t.cat!=="epargne");
+  const varTx = txIn(m).filter(t=>t.cat!=="epargne" && t.cat!=="revenu");
   const topCats = cats().filter(c=>c.id!=="epargne")
     .map(c=>({c, v:spentByCat(m,c.id)}))
     .filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,2)
@@ -1802,7 +1811,7 @@ function trackedMonthsUpTo(m, cap=240){
 
 function chartDepenses(m, n){
   const months = lastNMonths(m, n);
-  const varCats = cats().filter(c=>c.id!=="epargne");
+  const varCats = cats().filter(c=>c.id!=="epargne" && c.id!=="revenu");
   const totals = months.map(mo => varCats.reduce((s,c)=>s+spentByCat(mo,c.id),0));
   const max = niceMax(Math.max(...totals, 100));
   const W = n>12 ? 1280 : (n>6 ? 960 : 720), H=250, L=52, R=8, T=14, B=26, plotW=W-L-R, plotH=H-T-B;
@@ -1864,7 +1873,7 @@ function chartEpargne(m, cap){
 
 function renderBilan(){
   const m = UI.month;
-  const varCats = cats().filter(c=>c.id!=="epargne");
+  const varCats = cats().filter(c=>c.id!=="epargne" && c.id!=="revenu");
   const months = trackedMonthsUpTo(m);
   const nM = months.length;
   const epCumulee = months.reduce((s,mo)=>s+savedIn(mo),0);
@@ -2035,7 +2044,7 @@ function renderProjection(m){
   if(m !== cm) return ""; // projection uniquement pour le mois en cours
   const day = today.getDate();
   const dim = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
-  const varCats = cats().filter(c=>c.id!=="epargne");
+  const varCats = cats().filter(c=>c.id!=="epargne" && c.id!=="revenu");
   const spentTotal = varCats.reduce((s,c)=>s+spentByCat(m,c.id),0);
   if(spentTotal<=0 || day<1) return "";
   const pace = spentTotal/day;
