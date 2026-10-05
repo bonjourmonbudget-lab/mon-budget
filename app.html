@@ -605,6 +605,7 @@ function normalize(st){
   if(!st.famille || !Array.isArray(st.famille.enfants)) st.famille = {enfants:[]};
   if(!st.actifBudget) st.actifBudget = "moi";
   if(!st.settings.partage) st.settings.partage = {besoins:50, envies:30, epargne:20};
+  if(typeof st.settings.centimes !== "boolean") st.settings.centimes = false;
   for(const c of (st.settings.chargesFixes||[])){
     if(!c.cat) c.cat = guessFixedCat(c.label);
   }
@@ -807,7 +808,10 @@ let fmt0, fmt2;
 const DEVISES = [["EUR","Euro (€)"],["USD","Dollar US ($)"],["CHF","Franc suisse (CHF)"],["GBP","Livre sterling (£)"],["CAD","Dollar canadien ($ CA)"],["XOF","Franc CFA (F CFA)"]];
 function rebuildFormatters(){
   const code = (S && S.settings && S.settings.devise) || "EUR";
-  fmt0 = new Intl.NumberFormat("fr-FR",{style:"currency",currency:code,maximumFractionDigits:0});
+  const cent = !!(S && S.settings && S.settings.centimes);
+  fmt0 = new Intl.NumberFormat("fr-FR", cent
+    ? {style:"currency",currency:code,minimumFractionDigits:2,maximumFractionDigits:2}
+    : {style:"currency",currency:code,maximumFractionDigits:0});
   fmt2 = new Intl.NumberFormat("fr-FR",{style:"currency",currency:code,minimumFractionDigits:2});
 }
 rebuildFormatters();
@@ -1719,6 +1723,14 @@ function renderCompteTab(){
         </label>
         <label class="field" style="flex:1">Devise
           <select data-set="devise">${DEVISES.map(d=>`<option value="${d[0]}"${(S.settings.devise||"EUR")===d[0]?" selected":""}>${esc(d[1])}</option>`).join("")}</select>
+        </label>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <label class="field" style="flex:1">Montants affichés
+          <select data-set="centimes">
+            <option value="0"${!S.settings.centimes?" selected":""}>Arrondis — 1 234 €</option>
+            <option value="1"${S.settings.centimes?" selected":""}>Avec centimes — 1 233,99 €</option>
+          </select>
         </label>
       </div>
     </div>
@@ -3112,6 +3124,9 @@ document.getElementById("app").addEventListener("change", e=>{
   if(el.dataset.set==="devise"){
     if(!estPlus()){ toast("Le multi-devises fait partie de Mon Budget Plus — activez votre licence."); render(); return; }
     S.settings.devise = el.value; rebuildFormatters(); save(); render(); return;
+  }
+  if(el.dataset.set==="centimes"){
+    S.settings.centimes = el.value==="1"; rebuildFormatters(); save(); render(); return;
   }
   if(el.dataset.set){
     if(el.dataset.set==="jourPaie"){ S.settings.jourPaie = +el.value; save(); render(); return; }
