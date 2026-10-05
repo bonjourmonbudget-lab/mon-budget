@@ -3317,6 +3317,9 @@ function renderComptePop(){
         <button class="btn btn-grad btn-sm" data-action="compte-login">Se connecter</button>
         <button class="btn btn-ghost btn-sm" data-action="compte-signup">Créer mon compte</button>
       </div>
+      <div style="margin-top:10px;text-align:center">
+        <a class="linklike" data-action="compte-reset" style="font-size:12px;color:var(--muted)">Mot de passe oublié ?</a>
+      </div>
       <div id="compte-status" style="margin-top:8px;font-size:12px;min-height:16px;color:var(--muted)"></div>`;
   }
   p.innerHTML = html;
@@ -3404,6 +3407,19 @@ document.addEventListener("click", async e=>{
       await MB_user.sendEmailVerification();
       mbMsg("📧 Email de validation renvoyé à " + MB_user.email + " — pensez aux spams.");
     }catch(_){ mbMsg("Envoi impossible pour le moment — réessayez dans quelques minutes.", true); }
+  }
+  else if(a==="compte-reset"){
+    const email = (document.getElementById("compte-email")?.value || "").trim();
+    if(!mbEmailOk(email)){ mbMsg("Entrez votre email dans le champ ci-dessus, puis recliquez « Mot de passe oublié ».", true); return; }
+    mbMsg("⏳ Envoi de l'email de réinitialisation…");
+    try{
+      await firebase.auth().sendPasswordResetEmail(email);
+      mbMsg("📧 Email envoyé à " + email + " — cliquez sur le lien qu'il contient pour choisir un nouveau mot de passe, puis reconnectez-vous.");
+    }catch(err){
+      const code = (err && err.code) || "";
+      mbMsg(code === "auth/user-not-found" ? "Aucun compte avec cet email — créez-le d'abord." :
+            "Erreur : " + ((err && err.message) || "envoi impossible"), true);
+    }
   }
   else if(a==="compte-logout"){
     try{ await firebase.auth().signOut(); toast("Déconnecté. À bientôt !"); }
