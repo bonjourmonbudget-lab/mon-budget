@@ -2562,7 +2562,7 @@ function calcCard(){
   const rangees = [["7","8","9","÷"],["4","5","6","×"],["1","2","3","−"]];
   const expr = String(UI.calc.expr || "0");
   return `<div class="card" id="calc-card" style="padding:16px">
-    <div id="calc-disp" style="text-align:right;font-size:22px;font-weight:800;min-height:32px;padding:8px 12px;background:var(--input-bg);border-radius:10px;overflow:hidden;white-space:nowrap">${esc(expr.replace(/\./g,","))}</div>
+    <div id="calc-disp" style="text-align:right;font-size:22px;font-weight:800;min-height:32px;padding:8px 12px;background:var(--input-bg);border-radius:10px;overflow-x:auto;white-space:nowrap;scrollbar-width:thin">${esc(expr.replace(/\./g,","))}</div>
     <div class="calc-grid">
       ${rangees.flat().map(k=>`<button class="calc-key" data-calc="${k}">${k}</button>`).join("")}
       <button class="calc-key" data-calc="0">0</button>
@@ -2605,7 +2605,10 @@ function handleCalcKey(k){
   }
   UI.calc.expr = ex;
   const disp = document.getElementById("calc-disp");
-  if(disp) disp.textContent = ex.replace(/\./g, ",");
+  if(disp){
+    disp.textContent = ex.replace(/\./g, ",");
+    if(disp.scrollWidth > disp.clientWidth) disp.scrollLeft = disp.scrollWidth; // derniers chiffres toujours visibles
+  }
 }
 
 /* Clavier physique → calculatrice (quand elle est ouverte) */
@@ -2655,6 +2658,9 @@ function render(){
   document.getElementById("app").innerHTML = (S.visite ? "" : welcomeHtml()) + TABS[UI.tab]();
   window.scrollTo({top:0});
   majHautPage();
+  // Écran calculatrice : toujours montrer la fin de l'expression (derniers chiffres saisis)
+  const cd = document.getElementById("calc-disp");
+  if(cd && cd.scrollWidth > cd.clientWidth) cd.scrollLeft = cd.scrollWidth;
 }
 
 /* Bouton retour en haut : visible dès qu'on fait défiler une page longue */
