@@ -282,15 +282,14 @@
   #compte-pop[hidden]{display:none}
   @media (max-width:720px){
     #btn-compte .mail{display:none} #compte-pop{top:64px}
-    /* Bandeau mobile : une seule ligne, onglets défilables au doigt */
-    header.topbar{flex-wrap:nowrap;gap:10px;padding:10px 12px}
+    /* Bandeau mobile : rangée 1 = titre + connexion, rangée 2 = onglets pleine largeur défilables */
+    header.topbar{flex-wrap:wrap;gap:6px 10px;padding:10px 12px}
     .brand{font-size:16px;flex:none}
-    nav{flex:1;min-width:0;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    #sync-badge{order:1;margin-left:auto;padding:8px 10px;flex:none}
+    #btn-compte{order:2;padding:8px 10px;flex:none}
+    nav{order:3;flex:1 1 100%;min-width:0;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:2px}
     nav::-webkit-scrollbar{display:none}
-    nav{gap:2px}
     nav button{white-space:nowrap;padding:8px 10px;font-size:13px}
-    #sync-badge{margin-left:0;padding:8px 10px;flex:none}
-    #btn-compte{padding:8px 10px;flex:none}
     main{padding:22px 14px 60px}
   }
 
