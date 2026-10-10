@@ -244,7 +244,7 @@
 
   <section id="tarifs">
     <h2>Tarifs simples et honnêtes</h2>
-    <p class="sect-sub">L'essentiel est gratuit pour toujours — y compris la synchro chiffrée. La licence Plus à 19 €, une seule fois, débloque le couple, la famille et les exports pro.</p>
+    <p class="sect-sub">L'essentiel est gratuit pour toujours — y compris la synchro multi-appareils. La licence Plus à 19 €, une seule fois, débloque le couple, la famille et les exports pro.</p>
     <div class="plans">
       <div class="plan">
         <h3>Gratuit</h3>
@@ -282,14 +282,14 @@
         <button class="btn btn-grad" data-buy="plus" style="text-align:center">Acheter Plus — 19 €</button>
       </div>
       <div class="plan">
-        <h3>Synchro chiffrée <span class="soon">en préparation</span></h3>
+        <h3>Synchro multi-appareils <span class="soon">en préparation</span></h3>
         <div class="price">Gratuit <small>pour tous</small></div>
-        <div class="per">votre budget sur tous vos appareils — même le serveur ne peut pas le lire</div>
+        <div class="per">automatique, sans mot de passe — votre budget suit votre compte</div>
         <ul>
-          <li>Synchro chiffrée PC ↔ mobile</li>
+          <li>Synchro PC ↔ mobile automatique</li>
           <li>Mode couple en temps réel <b>(inclus dans Plus)</b></li>
-          <li>Sauvegarde automatique</li>
-          <li>Le serveur ne peut pas lire vos données</li>
+          <li>Sauvegarde en ligne incluse</li>
+          <li>Accessible uniquement avec votre compte</li>
         </ul>
         <button class="btn btn-ghost" data-buy="sync" style="text-align:center">📧 M'alerter à la sortie</button>
       </div>
@@ -299,9 +299,9 @@
   <section id="faq">
     <h2>Questions fréquentes</h2>
     <div class="faq">
-      <details><summary>Mes données bancaires sont-elles envoyées quelque part ?</summary><p>Non, et c'est le principe fondateur de l'app : aucune connexion à votre banque, aucun serveur. Vos relevés sont lus localement dans votre navigateur, vos données restent sur votre machine. Le compte (inscription gratuite par email et mot de passe, avec validation par email) est <b>requis pour ouvrir l'application</b> : il ne retient que votre adresse, jamais vos chiffres. La future synchro sera chiffrée côté client : même notre serveur ne pourra pas lire vos données.</p></details>
+      <details><summary>Mes données bancaires sont-elles envoyées quelque part ?</summary><p>Non, et c'est le principe fondateur de l'app : aucune connexion à votre banque, jamais. Vos relevés sont lus localement dans votre navigateur, vos données restent sur votre machine. Le compte (inscription gratuite par email et mot de passe, avec validation par email) est <b>requis pour ouvrir l'application</b>. La synchro multi-appareils suit votre compte : seuls vos appareils connectés y accèdent.</p></details>
       <details><summary>Pourquoi importer un CSV plutôt que connecter ma banque ?</summary><p>Exporter un relevé prend 30 secondes sur n'importe quel site bancaire français. En échange : zéro agrément bancaire à faire circuler, zéro risque de fuite de credentials, et un budget qui marche même si votre banque change d'API.</p></details>
-      <details><summary>Est-ce que ça marche sur téléphone ?</summary><p>Oui — installez l'app depuis votre navigateur mobile (« Ajouter à l'écran d'accueil »). La synchro chiffrée entre PC et mobile est en préparation : elle sera <b>gratuite pour tous les comptes</b>.</p></details>
+      <details><summary>Est-ce que ça marche sur téléphone ?</summary><p>Oui — installez l'app depuis votre navigateur mobile (« Ajouter à l'écran d'accueil »). La synchro automatique entre PC et mobile est en préparation : elle sera <b>gratuite pour tous les comptes</b>.</p></details>
       <details><summary>Et si je perds mon ordinateur ?</summary><p>Exportez une sauvegarde JSON depuis Paramètres → Données (1 clic) et rangez-la où vous voulez. Elle se restaure en un clic sur n'importe quel appareil.</p></details>
       <details><summary>Comment ça marche pour un couple ?</summary><p>Chacun installe l'app sur son appareil : les données restent individuelles et locales. Le <b>mode couple</b> (inclus dans Plus) consolide deux budgets en une vue foyer. Et pour la synchro temps réel (en préparation) : la synchro individuelle est <b>gratuite pour tous</b>, et le mode couple synchronisé reste <b>inclus dans la licence Plus — un seul achat par foyer</b> : le titulaire de la licence invite son/sa partenaire par email, qui reçoit un <b>accès invité gratuit</b> au budget partagé. Deux comptes, une seule licence, et le serveur ne pourra jamais lire vos données.</p></details>
     </div>
@@ -310,7 +310,7 @@
   <section id="inscription">
     <div class="cta-final">
       <h2>Soyez prévenu des nouveautés</h2>
-      <p class="sect-sub">Mode couple, export PDF, synchro chiffrée : une brève par mois maximum, jamais de spam.</p>
+      <p class="sect-sub">Mode couple, export PDF, synchro : une brève par mois maximum, jamais de spam.</p>
       <form class="insc" id="waitlist-form" autocomplete="off">
         <input type="email" id="insc-email" placeholder="votre@email.fr" required>
         <button class="btn btn-grad" type="submit">Me prévenir</button>
@@ -382,7 +382,7 @@ document.querySelectorAll("[data-buy]").forEach(btn => {
     if (plan === "sync") {
       const msg = document.getElementById("insc-msg");
       msg.style.color = "var(--muted)";
-      msg.textContent = "La synchro chiffrée est en développement. Votre email = place prioritaire à la bêta.";
+      msg.textContent = "La synchro est en développement. Votre email = place prioritaire à la bêta.";
       document.getElementById("insc-email").focus();
       document.getElementById("inscription").scrollIntoView({ behavior: "smooth", block: "center" });
     }

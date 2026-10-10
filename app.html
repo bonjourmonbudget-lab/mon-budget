@@ -1775,8 +1775,8 @@ function renderCompteTab(){
     </div>
 
     <div class="card settings-card">
-      <h3 style="font-size:16px">🔄 Synchro chiffrée</h3>
-      <p style="color:var(--muted);font-size:12.5px;margin:8px 0 12px">Retrouvez votre budget sur tous vos appareils. <b>Gratuite pour tous les comptes.</b> Vos données sont chiffrées sur votre appareil avec votre mot de passe de synchro — le serveur ne stocke qu'un coffre illisible. <b>Mot de passe de synchro oublié = données du cloud irrécupérables</b> (vos données locales, elles, restent intactes sur chaque appareil).</p>
+      <h3 style="font-size:16px">🔄 Synchro multi-appareils</h3>
+      <p style="color:var(--muted);font-size:12.5px;margin:8px 0 12px">Retrouvez votre budget sur tous vos appareils — <b>gratuit, automatique, sans mot de passe à retenir</b>. Vos données suivent votre compte et ne sont accessibles qu'avec votre connexion. Sans compte ou hors-ligne, l'application fonctionne normalement et vos données restent sur votre appareil.</p>
       <div id="sync-zone"><div class="empty" style="padding:12px">Chargement…</div></div>
     </div>
 
@@ -3486,16 +3486,16 @@ function planPushSynchro(){
   if(MB_pausePlan) return;
   if(!(S && S.sync && S.sync.on) || !mbFs()){ majSyncBadge(); return; }
   majSyncBadge();
-  if(!MB_user || !MB_syncPwd) return; // mot de passe de synchro requis (session)
+  if(!MB_user) return;
   clearTimeout(MB_pushTimer);
   MB_pushTimer = setTimeout(pushSilencieux, 12000);
 }
 async function pushSilencieux(){
   MB_pushTimer = null;
-  if(!MB_user || !MB_syncPwd || !(S && S.sync && S.sync.on)) return;
+  if(!MB_user || !(S && S.sync && S.sync.on)) return;
   if(MB_syncBusy){ planPushSynchro(); return; }
   MB_syncBusy = true; majSyncBadge();
-  try{ await mbPushCore(MB_syncPwd); mbSaveSansReplan(); }
+  try{ await mbPushCore(); mbSaveSansReplan(); }
   catch(e){ MB_syncErreur = ((e && e.code) || (e && e.message) || "erreur").toString().slice(0, 60); }
   finally{ MB_syncBusy = false; majSyncBadge(); }
 }
@@ -3519,12 +3519,11 @@ function majSyncBadge(){
   else if(MB_syncErreur){ txt = "⚠"; titre = "Dernier envoi en échec : " + MB_syncErreur; }
   else if(MB_cloudDevant){ txt = "📥"; titre = "Des données plus récentes sont dans le cloud — Récupérer"; }
   else if(!MB_user){ txt = "⏸"; titre = "Connectez-vous pour synchroniser"; }
-  else if(!MB_syncPwd){ txt = "⏸"; titre = "Synchro en pause — mot de passe de synchro requis (onglet Compte)"; }
   else if(MB_pushTimer){ txt = "…"; titre = "Modification enregistrée — envoi chiffré dans quelques secondes"; }
   b.textContent = txt; b.title = titre;
   b.style.borderColor = (MB_syncErreur || MB_cloudDevant) ? "rgba(251,191,36,.5)" : "var(--border-2)";
 }
-setInterval(()=>{ if(S && S.sync && S.sync.on && MB_user && MB_syncPwd && !MB_syncBusy) mbCheckCloud(); }, 300000);
+setInterval(()=>{ if(S && S.sync && S.sync.on && MB_user && !MB_syncBusy) mbCheckCloud(); }, 300000);
 
 function masquerMur(){
   try{ sessionStorage.setItem("mbMurPasse", "1"); }catch(_){}
@@ -3532,33 +3531,10 @@ function masquerMur(){
   if(m) m.hidden = true;
 }
 
-/* ============ Synchro chiffrée (gratuite pour tous) ============
-   Coffre : AES-256-GCM, clé dérivée du mot de passe de synchro (PBKDF2 310k).
-   Le serveur (Firestore) ne voit qu'un blob illisible, protégé par les règles
-   d'accès : seul l'utilisateur authentifié propriétaire peut lire/écrire. */
-let MB_syncPwd = null; // en RAM pour la session uniquement — jamais stocké
-const mbB64 = {
-  enc: u8 => btoa(String.fromCharCode(...u8)),
-  dec: s => Uint8Array.from(atob(s), c => c.charCodeAt(0))
-};
-async function mbCleSynchro(mdp, selB64){
-  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(mdp), "PBKDF2", false, ["deriveKey"]);
-  return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt: mbB64.dec(selB64), iterations: 310000, hash: "SHA-256" },
-    base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
-  );
-}
-async function mbChiffrer(obj, cle){
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const data = new TextEncoder().encode(JSON.stringify(obj));
-  const buf = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, cle, data);
-  return { iv: mbB64.enc(iv), blob: mbB64.enc(new Uint8Array(buf)) };
-}
-async function mbDechiffrer(blob, iv, cle){
-  const buf = await crypto.subtle.decrypt({ name: "AES-GCM", iv: mbB64.dec(iv) }, cle, mbB64.dec(blob));
-  return JSON.parse(new TextDecoder().decode(buf));
-}
-function mbFs(){ return (typeof firebase !== "undefined" && firebase.firestore) ? firebase.firestore() : null; }
+/* ============ Synchro (gratuite pour tous, automatique, sans mot de passe) ============
+   Les données suivent le compte : stockées dans Firestore, accessibles uniquement
+   avec la connexion du propriétaire (règles de sécurité par uid). */
+const mbFs = () => (typeof firebase !== "undefined" && firebase.firestore) ? firebase.firestore() : null;
 function renderSync(){
   const z = document.getElementById("sync-zone");
   if(!z) return;
@@ -3570,23 +3546,18 @@ function renderSync(){
     html = `<div class="empty" style="padding:12px">Connectez-vous pour activer la synchro.</div><div class="row" style="margin-top:10px"><button class="btn btn-grad btn-sm" data-action="compte-open">Se connecter</button></div>`;
   } else if(!st.on){
     html = `
-      <div class="row" style="flex-wrap:wrap;gap:8px">
-        <input class="lab" id="sync-mdp1" type="password" placeholder="Mot de passe de synchro (8 car. min.)" style="flex:1;min-width:160px">
-        <input class="lab" id="sync-mdp2" type="password" placeholder="Confirmez" style="flex:1;min-width:140px">
-        <button class="btn btn-grad btn-sm" data-action="sync-activer" style="white-space:nowrap">🔒 Activer</button>
-      </div>
-      <p style="color:var(--muted-2);font-size:11.5px;margin-top:8px">Choisissez un mot de passe DIFFÉRENT de celui de votre compte. Il chiffre vos données sur vos appareils : personne ne peut le retrouver — ni nous.</p>`;
+      <p style="color:var(--muted);font-size:12.5px;margin:0 0 10px">Vos données suivront votre compte sur tous vos appareils — automatiquement, sans rien à retenir.</p>
+      <div class="row"><button class="btn btn-grad btn-sm" data-action="sync-activer">🔄 Activer la synchro</button></div>`;
   } else {
     html = `
       <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:10px">
         <span class="badge ok">✓ Synchro active</span>
-        ${MB_syncPwd ? `<span class="badge ok">🔄 automatique</span>` : `<span class="badge warn">⏸ en pause — mot de passe requis</span>`}
-        ${st.dernier ? `<span style="color:var(--muted);font-size:12.5px">Dernier envoi : ${esc(st.dernier)} · version ${st.v||1}</span>` : `<span style="color:var(--muted);font-size:12.5px">Aucun envoi pour l'instant</span>`}
+        <span class="badge ok">🔄 automatique</span>
+        ${st.dernier ? `<span style="color:var(--muted);font-size:12.5px">Dernier envoi : ${esc(st.dernier)} · version ${st.v||1}</span>` : `<span style="color:var(--muted);font-size:12.5px">Premier envoi dans quelques secondes…</span>`}
       </div>
-      ${!MB_syncPwd ? `<p style="color:var(--muted-2);font-size:11.5px;margin-top:8px">Saisissez votre mot de passe de synchro ci-dessous pour reprendre l'envoi automatique (il n'est demandé qu'une fois par session).</p>` : `<p style="color:var(--muted-2);font-size:11.5px;margin-top:8px">🔄 Vos modifications sont envoyées automatiquement (chiffrées) quelques secondes après chaque changement.</p>`}
+      <p style="color:var(--muted-2);font-size:11.5px;margin-top:8px">Vos modifications sont envoyées automatiquement quelques secondes après chaque changement. Sur un nouvel appareil, elles sont proposées à la récupération.</p>
       <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:12px">
-        ${MB_syncPwd ? "" : `<input class="lab" id="sync-mdp" type="password" placeholder="Mot de passe de synchro" style="flex:1;min-width:160px">`}
-        <button class="btn btn-grad btn-sm" data-action="sync-envoyer" style="white-space:nowrap">📤 Envoyer mes données</button>
+        <button class="btn btn-ghost btn-sm" data-action="sync-envoyer" style="white-space:nowrap">📤 Envoyer maintenant</button>
         <button class="btn btn-ghost btn-sm" data-action="sync-recuperer" style="white-space:nowrap">📥 Récupérer</button>
         <button class="btn btn-danger btn-sm" data-action="sync-off" style="white-space:nowrap">Désactiver</button>
       </div>
@@ -3599,14 +3570,12 @@ function syncMsg(txt, err){
   if(el){ el.textContent = txt || ""; el.style.color = err ? "#ef4444" : "var(--muted)"; }
   else if(txt) toast(txt);
 }
-async function mbPushCore(mdp){
-  const cle = await mbCleSynchro(mdp, S.sync.salt);
-  const coffre = await mbChiffrer({ etat:S, exporte:new Date().toISOString() }, cle);
+async function mbPushCore(){
   const v = (S.sync.v || 0) + 1;
   await mbFs().collection("users").doc(MB_user.uid).collection("sync").doc("main")
-    .set({ blob: coffre.blob, iv: coffre.iv, v, maj: firebase.firestore.FieldValue.serverTimestamp() });
+    .set({ data: JSON.stringify(S), v, maj: firebase.firestore.FieldValue.serverTimestamp() });
   S.sync.v = v; S.sync.dernier = new Date().toLocaleString("fr-FR");
-  MB_syncPwd = mdp; MB_syncErreur = null; MB_cloudDevant = false;
+  MB_syncErreur = null; MB_cloudDevant = false;
   return v;
 }
 /* Sauvegarde locale SANS re-planifier un envoi (sinon : envoi → save → envoi → … en boucle) */
@@ -3614,41 +3583,36 @@ function mbSaveSansReplan(){
   MB_pausePlan = true;
   try{ save(); } finally{ MB_pausePlan = false; }
 }
-async function syncEnvoyer(mdp){
-  syncMsg("🔒 Chiffrement puis envoi en cours…");
+async function syncEnvoyer(){
+  syncMsg("📤 Envoi en cours…");
   try{
-    const v = await mbPushCore(mdp);
+    const v = await mbPushCore();
     mbSaveSansReplan(); renderSync(); majSyncBadge();
-    syncMsg("✅ Données chiffrées envoyées (version " + v + ") — récupérables depuis n'importe quel appareil connecté.");
+    syncMsg("✅ Données envoyées (version " + v + ") — disponibles sur vos autres appareils.");
   }catch(err){
     const code = (err && err.code) || "";
     MB_syncErreur = code || ((err && err.message) || "envoi impossible");
     majSyncBadge();
     syncMsg(code.includes("permission") || code.includes("unavailable")
-      ? "Base de synchro pas encore ouverte (voir Firebase) ou connexion absente."
+      ? "Synchro indisponible (connexion ou configuration Firebase)."
       : "Erreur : " + ((err && err.message) || "envoi impossible"), true);
   }
 }
-async function syncRecuperer(mdp){
-  syncMsg("📥 Lecture du coffre chiffré…");
+async function syncRecuperer(){
+  syncMsg("📥 Lecture des données…");
   try{
     const doc = await mbFs().collection("users").doc(MB_user.uid).collection("sync").doc("main").get();
     if(!doc.exists){ syncMsg("Aucune donnée dans le cloud — envoyez d'abord depuis un appareil.", true); return; }
     const d = doc.data();
-    if(!S.sync || !S.sync.salt){ syncMsg("Activez d'abord la synchro avec votre mot de passe d'origine sur cet appareil.", true); return; }
-    let charge;
-    try{ charge = await mbDechiffrer(d.blob, d.iv, await mbCleSynchro(mdp, S.sync.salt)); }
-    catch(_){
-      syncMsg("❌ Mot de passe de synchro incorrect (déchiffrement impossible).", true); return;
-    }
+    const charge = JSON.parse(d.data);
+    if(!charge || !charge.settings){ syncMsg("Données du cloud illisibles (ancien format).", true); return; }
     if(!confirm("Remplacer les données de cet appareil par la version du cloud (version " + (d.v||"?") + ", envoyée le " + (d.maj && d.maj.toDate ? d.maj.toDate().toLocaleString("fr-FR") : "?") + ") ?")){
       syncMsg("Récupération annulée — données locales conservées."); return;
     }
-    MB_syncPwd = mdp;
-    if(charge.etat){ appliquerEtat(charge.etat); save(); render(); }
+    if(charge.cats){ appliquerEtat(charge); render(); }
     S.sync = S.sync || { on:true }; S.sync.v = d.v || 1; S.sync.dernier = new Date().toLocaleString("fr-FR"); mbSaveSansReplan();
     MB_cloudDevant = false; majSyncBadge();
-    renderSync(); syncMsg("✅ Données récupérées et déchiffrées.");
+    renderSync(); syncMsg("✅ Données récupérées.");
   }catch(err){
     syncMsg("Erreur : " + ((err && err.message) || "lecture impossible"), true);
   }
@@ -3662,32 +3626,24 @@ document.addEventListener("click", async e=>{
   if(!mbDispo()){ toast("Connexion au compte indisponible hors-ligne."); return; }
   const a = el.dataset.action;
   if(a==="sync-activer"){
-    const m1 = document.getElementById("sync-mdp1")?.value || "";
-    const m2 = document.getElementById("sync-mdp2")?.value || "";
-    if(m1.length < 8){ toast("Mot de passe de synchro : 8 caractères minimum."); return; }
-    if(m1 !== m2){ toast("Les deux mots de passe ne correspondent pas."); return; }
     if(!MB_user){ toast("Connectez-vous d'abord (bouton en haut à droite)."); return; }
-    const sel = crypto.getRandomValues(new Uint8Array(16));
-    S.sync = { on:true, salt: mbB64.enc(sel), v:0 };
-    MB_syncPwd = m1; save(); renderSync();
-    toast("🔒 Synchro chiffrée activée. Envoyez vos données pour créer votre coffre.");
+    S.sync = { on:true, v:0 };
+    save(); renderSync(); majSyncBadge();
+    toast("🔄 Synchro activée — vos données suivent votre compte.");
+    planPushSynchro();
     return;
   }
   if(a==="sync-envoyer"){
-    const mdp = MB_syncPwd || (document.getElementById("sync-mdp")?.value || "");
-    if(!mdp){ toast("Saisissez votre mot de passe de synchro."); return; }
     if(!MB_user){ toast("Connectez-vous d'abord."); return; }
-    syncEnvoyer(mdp); return;
+    syncEnvoyer(); return;
   }
   if(a==="sync-recuperer"){
-    const mdp = MB_syncPwd || (document.getElementById("sync-mdp")?.value || "");
-    if(!mdp){ toast("Saisissez votre mot de passe de synchro."); return; }
     if(!MB_user){ toast("Connectez-vous d'abord."); return; }
-    syncRecuperer(mdp); return;
+    syncRecuperer(); return;
   }
   if(a==="sync-off"){
-    if(!confirm("Désactiver la synchro ?\n\nLe coffre chiffré reste dans le cloud (vous pourrez le réactiver avec le même mot de passe). Vos données locales ne changent pas.")) return;
-    S.sync = { on:false }; MB_syncPwd = null; save(); renderSync(); toast("Synchro désactivée.");
+    if(!confirm("Désactiver la synchro ?\n\nVos données locales ne changent pas — vous pourrez la réactiver à tout moment.")) return;
+    S.sync = { on:false }; save(); renderSync(); majSyncBadge(); toast("Synchro désactivée.");
     return;
   }
   if(a==="compte-open"){ mbPopToggle(true); return; }
