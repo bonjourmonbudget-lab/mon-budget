@@ -280,7 +280,19 @@
     padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.45)
   }
   #compte-pop[hidden]{display:none}
-  @media (max-width:720px){ #btn-compte .mail{display:none} #compte-pop{top:64px} }
+  @media (max-width:720px){
+    #btn-compte .mail{display:none} #compte-pop{top:64px}
+    /* Bandeau mobile : une seule ligne, onglets défilables au doigt */
+    header.topbar{flex-wrap:nowrap;gap:10px;padding:10px 12px}
+    .brand{font-size:16px;flex:none}
+    nav{flex:1;min-width:0;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    nav::-webkit-scrollbar{display:none}
+    nav{gap:2px}
+    nav button{white-space:nowrap;padding:8px 10px;font-size:13px}
+    #sync-badge{margin-left:0;padding:8px 10px;flex:none}
+    #btn-compte{padding:8px 10px;flex:none}
+    main{padding:22px 14px 60px}
+  }
 
   /* Mur d'accès : compte gratuit requis pour ouvrir l'application */
   #mur-compte{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:20px}
