@@ -443,6 +443,7 @@
     <button data-tab="compte">Compte</button>
     <button id="btn-undo" title="Annuler la dernière action" style="display:none">↩ Annuler</button>
   </nav>
+  <button id="sync-badge" data-action="sync-badge" hidden title="Synchro chiffrée" style="margin-left:8px;display:inline-flex;align-items:center;gap:5px;background:var(--nav-active);border:1px solid var(--border-2);color:#d8d8e4;padding:8px 12px;border-radius:10px;font-weight:600;font-size:13.5px;font-family:inherit;cursor:pointer;transition:.15s"></button>
   <button id="btn-compte" data-action="compte-open" title="Mon compte"></button>
 </header>
 
@@ -708,6 +709,7 @@ function save(){
       idbPut("state", S).catch(() => {});
     }, 350);
   }
+  planPushSynchro();
 }
 function annuler(){
   if(!__undoPile.length){ toast("Rien à annuler."); return; }
@@ -3477,6 +3479,53 @@ function majMur(){
   const lien = document.getElementById("mur-continuer");
   if(lien) lien.hidden = mbDispo();
 }
+/* --- Synchro automatique (phase 2) : envoi différé après chaque modification,
+   badge d'état dans le bandeau, contrôle du cloud au démarrage --- */
+let MB_pushTimer = null, MB_syncBusy = false, MB_syncErreur = null, MB_cloudDevant = false, MB_pausePlan = false;
+function planPushSynchro(){
+  if(MB_pausePlan) return;
+  if(!(S && S.sync && S.sync.on) || !mbFs()){ majSyncBadge(); return; }
+  majSyncBadge();
+  if(!MB_user || !MB_syncPwd) return; // mot de passe de synchro requis (session)
+  clearTimeout(MB_pushTimer);
+  MB_pushTimer = setTimeout(pushSilencieux, 12000);
+}
+async function pushSilencieux(){
+  MB_pushTimer = null;
+  if(!MB_user || !MB_syncPwd || !(S && S.sync && S.sync.on)) return;
+  if(MB_syncBusy){ planPushSynchro(); return; }
+  MB_syncBusy = true; majSyncBadge();
+  try{ await mbPushCore(MB_syncPwd); mbSaveSansReplan(); }
+  catch(e){ MB_syncErreur = ((e && e.code) || (e && e.message) || "erreur").toString().slice(0, 60); }
+  finally{ MB_syncBusy = false; majSyncBadge(); }
+}
+async function mbCheckCloud(){
+  if(!MB_user || !(S && S.sync && S.sync.on) || !mbFs()) return;
+  try{
+    const doc = await mbFs().collection("users").doc(MB_user.uid).collection("sync").doc("main").get();
+    if(doc.exists && (doc.data().v || 0) > (S.sync.v || 0)){
+      MB_cloudDevant = true; majSyncBadge();
+      toast("📥 Une version plus récente de vos données attend dans le cloud — onglet Compte → 📥 Récupérer.");
+    }
+  }catch(e){}
+}
+function majSyncBadge(){
+  const b = document.getElementById("sync-badge");
+  if(!b) return;
+  if(!(S && S.sync && S.sync.on) || !mbDispo()){ b.hidden = true; return; }
+  b.hidden = false;
+  let txt = "✓", titre = "Synchro à jour";
+  if(MB_syncBusy){ txt = "🔄"; titre = "Envoi chiffré en cours…"; }
+  else if(MB_syncErreur){ txt = "⚠"; titre = "Dernier envoi en échec : " + MB_syncErreur; }
+  else if(MB_cloudDevant){ txt = "📥"; titre = "Des données plus récentes sont dans le cloud — Récupérer"; }
+  else if(!MB_user){ txt = "⏸"; titre = "Connectez-vous pour synchroniser"; }
+  else if(!MB_syncPwd){ txt = "⏸"; titre = "Synchro en pause — mot de passe de synchro requis (onglet Compte)"; }
+  else if(MB_pushTimer){ txt = "…"; titre = "Modification enregistrée — envoi chiffré dans quelques secondes"; }
+  b.textContent = txt; b.title = titre;
+  b.style.borderColor = (MB_syncErreur || MB_cloudDevant) ? "rgba(251,191,36,.5)" : "var(--border-2)";
+}
+setInterval(()=>{ if(S && S.sync && S.sync.on && MB_user && MB_syncPwd && !MB_syncBusy) mbCheckCloud(); }, 300000);
+
 function masquerMur(){
   try{ sessionStorage.setItem("mbMurPasse", "1"); }catch(_){}
   const m = document.getElementById("mur-compte");
@@ -3531,8 +3580,10 @@ function renderSync(){
     html = `
       <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:10px">
         <span class="badge ok">✓ Synchro active</span>
+        ${MB_syncPwd ? `<span class="badge ok">🔄 automatique</span>` : `<span class="badge warn">⏸ en pause — mot de passe requis</span>`}
         ${st.dernier ? `<span style="color:var(--muted);font-size:12.5px">Dernier envoi : ${esc(st.dernier)} · version ${st.v||1}</span>` : `<span style="color:var(--muted);font-size:12.5px">Aucun envoi pour l'instant</span>`}
       </div>
+      ${!MB_syncPwd ? `<p style="color:var(--muted-2);font-size:11.5px;margin-top:8px">Saisissez votre mot de passe de synchro ci-dessous pour reprendre l'envoi automatique (il n'est demandé qu'une fois par session).</p>` : `<p style="color:var(--muted-2);font-size:11.5px;margin-top:8px">🔄 Vos modifications sont envoyées automatiquement (chiffrées) quelques secondes après chaque changement.</p>`}
       <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:12px">
         ${MB_syncPwd ? "" : `<input class="lab" id="sync-mdp" type="password" placeholder="Mot de passe de synchro" style="flex:1;min-width:160px">`}
         <button class="btn btn-grad btn-sm" data-action="sync-envoyer" style="white-space:nowrap">📤 Envoyer mes données</button>
@@ -3548,19 +3599,31 @@ function syncMsg(txt, err){
   if(el){ el.textContent = txt || ""; el.style.color = err ? "#ef4444" : "var(--muted)"; }
   else if(txt) toast(txt);
 }
+async function mbPushCore(mdp){
+  const cle = await mbCleSynchro(mdp, S.sync.salt);
+  const coffre = await mbChiffrer({ etat:S, exporte:new Date().toISOString() }, cle);
+  const v = (S.sync.v || 0) + 1;
+  await mbFs().collection("users").doc(MB_user.uid).collection("sync").doc("main")
+    .set({ blob: coffre.blob, iv: coffre.iv, v, maj: firebase.firestore.FieldValue.serverTimestamp() });
+  S.sync.v = v; S.sync.dernier = new Date().toLocaleString("fr-FR");
+  MB_syncPwd = mdp; MB_syncErreur = null; MB_cloudDevant = false;
+  return v;
+}
+/* Sauvegarde locale SANS re-planifier un envoi (sinon : envoi → save → envoi → … en boucle) */
+function mbSaveSansReplan(){
+  MB_pausePlan = true;
+  try{ save(); } finally{ MB_pausePlan = false; }
+}
 async function syncEnvoyer(mdp){
   syncMsg("🔒 Chiffrement puis envoi en cours…");
   try{
-    const cle = await mbCleSynchro(mdp, S.sync.salt);
-    const coffre = await mbChiffrer({ etat:S, exporte:new Date().toISOString() }, cle);
-    const v = (S.sync.v || 0) + 1;
-    await mbFs().collection("users").doc(MB_user.uid).collection("sync").doc("main")
-      .set({ blob: coffre.blob, iv: coffre.iv, v, maj: firebase.firestore.FieldValue.serverTimestamp() });
-    S.sync.v = v; S.sync.dernier = new Date().toLocaleString("fr-FR");
-    MB_syncPwd = mdp; save(); renderSync();
+    const v = await mbPushCore(mdp);
+    mbSaveSansReplan(); renderSync(); majSyncBadge();
     syncMsg("✅ Données chiffrées envoyées (version " + v + ") — récupérables depuis n'importe quel appareil connecté.");
   }catch(err){
     const code = (err && err.code) || "";
+    MB_syncErreur = code || ((err && err.message) || "envoi impossible");
+    majSyncBadge();
     syncMsg(code.includes("permission") || code.includes("unavailable")
       ? "Base de synchro pas encore ouverte (voir Firebase) ou connexion absente."
       : "Erreur : " + ((err && err.message) || "envoi impossible"), true);
@@ -3583,7 +3646,8 @@ async function syncRecuperer(mdp){
     }
     MB_syncPwd = mdp;
     if(charge.etat){ appliquerEtat(charge.etat); save(); render(); }
-    S.sync = S.sync || { on:true }; S.sync.v = d.v || 1; S.sync.dernier = new Date().toLocaleString("fr-FR"); save();
+    S.sync = S.sync || { on:true }; S.sync.v = d.v || 1; S.sync.dernier = new Date().toLocaleString("fr-FR"); mbSaveSansReplan();
+    MB_cloudDevant = false; majSyncBadge();
     renderSync(); syncMsg("✅ Données récupérées et déchiffrées.");
   }catch(err){
     syncMsg("Erreur : " + ((err && err.message) || "lecture impossible"), true);
@@ -3627,6 +3691,7 @@ document.addEventListener("click", async e=>{
     return;
   }
   if(a==="compte-open"){ mbPopToggle(true); return; }
+  if(a==="sync-badge"){ UI.tab = "compte"; render(); setTimeout(()=>document.getElementById("sync-zone")?.scrollIntoView({block:"center"}), 100); return; }
   if(a==="compte-goto-settings"){ mbPopToggle(false); UI.tab = "compte"; render(); return; }
   if(a==="compte-login" || a==="mur-login"){ mbFaireLogin(a === "mur-login" ? "mur" : "compte"); return; }
   if(a==="compte-signup" || a==="mur-signup"){ mbFaireSignup(a === "mur-signup" ? "mur" : "compte"); return; }
@@ -3658,8 +3723,8 @@ window.addEventListener("DOMContentLoaded", ()=>{
       MB_user = u;
       mbInitFait = true;
       majMur();
-      renderCompte();
-      if(u && !avant) toast("✅ Connecté : " + u.email);
+      renderCompte(); renderSync(); majSyncBadge();
+      if(u && !avant){ toast("✅ Connecté : " + u.email); mbCheckCloud(); }
       if(!u && avant) toast("Déconnecté.");
     });
     // Rafraîchir l'état « email vérifié » quand il change (après clic sur le lien de validation)
@@ -3671,6 +3736,7 @@ window.addEventListener("DOMContentLoaded", ()=>{
     }
     renderCompte();
     renderSync();
+    majSyncBadge();
     // Fermeture du panneau connexion : clic extérieur ou touche Échap
     document.addEventListener("click", e=>{
       if(!mbPopOuverte()) return;
