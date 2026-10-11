@@ -64,8 +64,8 @@
   }
   header.topbar{
     position:sticky;top:0;z-index:20;
-    display:flex;align-items:center;gap:26px;flex-wrap:wrap;
-    padding:13px 28px;
+    display:flex;align-items:center;flex-wrap:wrap;gap:8px 26px;
+    padding:12px 28px 10px;
     background:rgba(13,13,20,.86);backdrop-filter:blur(10px);
     border-bottom:1px solid #1c1c28;
   }
@@ -74,10 +74,12 @@
   a.brand:hover{opacity:.8}
   .brand svg{display:block}
   .grad-text{background:linear-gradient(90deg,#8f7bff,#c9a5fc);-webkit-background-clip:text;background-clip:text;color:transparent}
-  nav{display:flex;gap:6px;flex-wrap:wrap}
+  /* Les onglets ont leur propre bandeau : pleine largeur, une ligne, défilables */
+  nav{display:flex;gap:6px;flex:1 1 100%;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  nav::-webkit-scrollbar{display:none}
   nav button{
     background:transparent;border:1px solid transparent;color:var(--nav-text);
-    font:inherit;font-size:14px;font-weight:600;cursor:pointer;
+    font:inherit;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;
     padding:8px 14px;border-radius:10px;transition:.15s;
   }
   nav button:hover{color:var(--text-strong);background:var(--nav-hover-bg)}
@@ -282,14 +284,11 @@
   #compte-pop[hidden]{display:none}
   @media (max-width:720px){
     #btn-compte .mail{display:none} #compte-pop{top:64px}
-    /* Bandeau mobile : rangée 1 = titre + connexion, rangée 2 = onglets pleine largeur défilables */
-    header.topbar{flex-wrap:wrap;gap:6px 10px;padding:10px 12px}
-    .brand{font-size:16px;flex:none}
-    #sync-badge{order:1;margin-left:auto;padding:8px 10px;flex:none}
-    #btn-compte{order:2;padding:8px 10px;flex:none}
-    nav{order:3;flex:1 1 100%;min-width:0;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:2px}
-    nav::-webkit-scrollbar{display:none}
-    nav button{white-space:nowrap;padding:8px 10px;font-size:13px}
+    header.topbar{padding:10px 12px 8px}
+    .brand{font-size:16px}
+    nav button{padding:8px 10px;font-size:13px}
+    #sync-badge{padding:8px 10px}
+    #btn-compte{padding:8px 10px}
     main{padding:22px 14px 60px}
   }
 
