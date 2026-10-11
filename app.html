@@ -74,8 +74,8 @@
   a.brand:hover{opacity:.8}
   .brand svg{display:block}
   .grad-text{background:linear-gradient(90deg,#8f7bff,#c9a5fc);-webkit-background-clip:text;background-clip:text;color:transparent}
-  /* Les onglets ont leur propre bandeau : pleine largeur, une ligne, défilables */
-  nav{display:flex;gap:6px;flex:1 1 100%;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  /* Onglets : une ligne, élastiques (base 0 → jamais de saut à la ligne sur PC), défilables */
+  nav{display:flex;gap:6px;flex:1 1 0;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   nav::-webkit-scrollbar{display:none}
   nav button{
     background:transparent;border:1px solid transparent;color:var(--nav-text);
@@ -286,6 +286,8 @@
     #btn-compte .mail{display:none} #compte-pop{top:64px}
     header.topbar{padding:10px 12px 8px}
     .brand{font-size:16px}
+    /* Mobile : deux étages — titre + connexion, puis les onglets en pleine largeur */
+    nav{flex:1 1 100%;order:3}
     nav button{padding:8px 10px;font-size:13px}
     #sync-badge{padding:8px 10px}
     #btn-compte{padding:8px 10px}
