@@ -3799,7 +3799,7 @@ async function syncRecuperer(){
 /* Gestionnaire au niveau document : le bouton du bandeau, le panneau et le mur
    sont en dehors de #app, un écouteur sur #app ne verrait jamais leurs clics */
 document.addEventListener("click", async e=>{
-  const el = e.target.closest('[data-action^="compte-"], [data-action^="mur-"], [data-action^="sync-"]');
+  const el = e.target.closest('[data-action^="compte-"], [data-action^="mur-"], [data-action^="sync-"], [data-action^="foyer-"]');
   if(!el) return;
   if(!mbDispo()){ toast("Connexion au compte indisponible hors-ligne."); return; }
   const a = el.dataset.action;
