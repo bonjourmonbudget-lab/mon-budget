@@ -654,6 +654,7 @@ function normalize(st){
   if(!st.settings.partage) st.settings.partage = {besoins:50, envies:30, epargne:20};
   if(typeof st.settings.centimes !== "boolean") st.settings.centimes = false;
   if(!st.sync || typeof st.sync !== "object") st.sync = { on:false };
+  if(st.foyer && typeof st.foyer !== "object") st.foyer = null;
   // Migration : catégorie « Rentrée exceptionnelle » pour les comptes créés avant son arrivée
   if(Array.isArray(st.cats) && !st.cats.some(c=>c.id==="revenu")){
     st.cats.push({id:"revenu", label:"Rentrée exceptionnelle", color:"#4ade80", bucket:null});
@@ -2359,6 +2360,27 @@ function renderCouple(){
     </tr>`;
   }).join("");
 
+  const carteFoyer = `
+    <div class="card">
+      <h3 style="font-size:16px">🔗 Synchro du couple</h3>
+      <p style="color:var(--muted);font-size:12.5px;margin:8px 0 12px">Le budget de votre partenaire se met à jour tout seul via le cloud — plus besoin de s'envoyer des fichiers JSON. Un seul achat de licence Plus par foyer.</p>
+      ${!(S.foyer && S.foyer.code) ? `
+        <div class="row" style="flex-wrap:wrap;gap:8px;align-items:flex-end">
+          <button class="btn btn-grad btn-sm" data-action="foyer-creer">🔗 Créer une invitation</button>
+          <input class="lab" id="foyer-code" type="text" placeholder="Code reçu (ex. K7M2P9)" style="width:180px;text-transform:uppercase">
+          <button class="btn btn-ghost btn-sm" data-action="foyer-rejoindre">Rejoindre</button>
+        </div>
+      ` : `
+        <div class="row" style="gap:10px;flex-wrap:wrap">
+          <span class="badge ok">Foyer ${esc(S.foyer.code)}</span>
+          <span style="color:var(--muted);font-size:12.5px">${S.foyer.role === "proprietaire" ? "Vous êtes le titulaire de l'invitation" : "Vous avez rejoint ce foyer"}</span>
+          ${MB_donneesPartenaire ? `<button class="btn btn-grad btn-sm" data-action="foyer-appliquer">📥 Mettre à jour le budget partenaire</button>` : `<span class="badge warn">Partenaire pas encore connecté</span>`}
+          <button class="btn btn-danger btn-sm" data-action="foyer-quitter">Quitter</button>
+        </div>
+      `}
+      <div id="foyer-status" style="margin-top:8px;font-size:12.5px;min-height:16px;color:var(--muted)"></div>
+    </div>`;
+
   const partnerView = !p ? `
     <div class="card" style="text-align:center;padding:36px 24px">
       <div style="font-size:32px">👥</div>
@@ -2396,6 +2418,7 @@ function renderCouple(){
   <section class="section">
     <div class="section-head"><h2>Budget du partenaire</h2></div>
     <input type="file" id="partner-file" accept=".json,.csv,.txt,application/json,text/csv" style="display:none">
+    ${carteFoyer}
     ${partnerView}
   </section>
 
@@ -3498,7 +3521,7 @@ function majMur(){
 let MB_pushTimer = null, MB_syncBusy = false, MB_syncErreur = null, MB_cloudDevant = false, MB_pausePlan = false;
 function planPushSynchro(){
   if(MB_pausePlan) return;
-  if(!(S && S.sync && S.sync.on) || !mbFs()){ majSyncBadge(); return; }
+  if(!(S && S.sync && S.sync.on) && !(S && S.foyer)){ majSyncBadge(); return; }
   majSyncBadge();
   if(!MB_user) return;
   clearTimeout(MB_pushTimer);
@@ -3506,10 +3529,17 @@ function planPushSynchro(){
 }
 async function pushSilencieux(){
   MB_pushTimer = null;
-  if(!MB_user || !(S && S.sync && S.sync.on)) return;
+  if(!MB_user) return;
+  const perso = S && S.sync && S.sync.on;
+  const foyer = S && S.foyer && S.foyer.code;
+  if(!perso && !foyer) return;
   if(MB_syncBusy){ planPushSynchro(); return; }
   MB_syncBusy = true; majSyncBadge();
-  try{ await mbPushCore(); mbSaveSansReplan(); }
+  try{
+    if(perso) await mbPushCore();
+    if(foyer) await mbFoyerPush();
+    mbSaveSansReplan();
+  }
   catch(e){ MB_syncErreur = ((e && e.code) || (e && e.message) || "erreur").toString().slice(0, 60); }
   finally{ MB_syncBusy = false; majSyncBadge(); }
 }
@@ -3526,7 +3556,7 @@ async function mbCheckCloud(){
 function majSyncBadge(){
   const b = document.getElementById("sync-badge");
   if(!b) return;
-  if(!(S && S.sync && S.sync.on) || !mbDispo()){ b.hidden = true; return; }
+  if(!(S && ((S.sync && S.sync.on) || S.foyer)) || !mbDispo()){ b.hidden = true; return; }
   b.hidden = false;
   let txt = "✓", titre = "Synchro à jour";
   if(MB_syncBusy){ txt = "🔄"; titre = "Envoi chiffré en cours…"; }
@@ -3573,6 +3603,7 @@ function mbSyncSondage(){
       const doc = await mbFs().collection("users").doc(MB_user.uid).collection("sync").doc("main").get();
       if(doc.exists) mbTraiterCloud(doc.data());
     }catch(_){}
+    mbFoyerPull();
   }, 20000);
 }
 function mbStopEcoute(){
@@ -3595,6 +3626,82 @@ async function mbAppliquerCloud(d){
   }catch(_){ MB_cloudDevant = true; majSyncBadge(); }
 }
 document.addEventListener("visibilitychange", ()=>{ document.hidden ? mbStopEcoute() : mbEcouterCloud(); });
+
+/* --- Phase 3b : synchro du couple par code d'invitation (licence Plus) --- */
+let MB_donneesPartenaire = null; // dernière version cloud reçue du budget partenaire
+function foyerMsg(txt, err){
+  const el = document.getElementById("foyer-status");
+  if(el){ el.textContent = txt || ""; el.style.color = err ? "#ef4444" : "var(--muted)"; }
+  else if(txt) toast(txt);
+}
+function mbCodeFoyer(){
+  const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = ""; for(let i=0;i<6;i++) s += abc[Math.floor(Math.random()*abc.length)];
+  return s;
+}
+function mbMaCleFoyer(){ return S.foyer.role === "proprietaire" ? "dataP" : "dataPart"; }
+async function mbFoyerCreer(){
+  if(!MB_user || !mbFs()){ toast("Connectez-vous d'abord."); return; }
+  foyerMsg("⏳ Création de l'invitation…");
+  try{
+    let code = mbCodeFoyer(), ref = mbFs().collection("foyers").doc(code), guard = 0;
+    while((await ref.get()).exists && guard++ < 8){ code = mbCodeFoyer(); ref = mbFs().collection("foyers").doc(code); }
+    await ref.set({ proprietaire: MB_user.uid, partenaire: null, dataP: JSON.stringify(S),
+      majP: firebase.firestore.FieldValue.serverTimestamp() });
+    S.foyer = { code, role: "proprietaire" };
+    save(); render();
+    foyerMsg("🔗 Invitation créée ! Donnez ce code à votre partenaire : " + code + " (il le saisit ici même, sur son appareil).");
+  }catch(e){ foyerMsg("Création impossible : " + ((e && (e.code || e.message)) || "erreur"), true); }
+}
+async function mbFoyerRejoindre(code){
+  if(!MB_user || !mbFs()){ toast("Connectez-vous d'abord."); return; }
+  if(!/^[A-Z0-9]{6}$/i.test(code)){ foyerMsg("Code invalide : 6 caractères (lettres et chiffres).", true); return; }
+  foyerMsg("⏳ Recherche du foyer…");
+  try{
+    const ref = mbFs().collection("foyers").doc(code.toUpperCase());
+    const doc = await ref.get();
+    if(!doc.exists){ foyerMsg("Aucun foyer avec ce code — vérifiez auprès de votre partenaire.", true); return; }
+    const d = doc.data();
+    if(d.proprietaire === MB_user.uid){ foyerMsg("C'est votre propre invitation 😉", true); return; }
+    if(d.partenaire && d.partenaire !== MB_user.uid){ foyerMsg("Ce foyer a déjà un partenaire.", true); return; }
+    await ref.set({ partenaire: MB_user.uid, dataPart: JSON.stringify(S),
+      majPart: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    S.foyer = { code: code.toUpperCase(), role: "partenaire" };
+    save(); render();
+    foyerMsg("✅ Foyer rejoint ! Les budgets s'échangent automatiquement.");
+  }catch(e){ foyerMsg("Impossible de rejoindre : " + ((e && (e.code || e.message)) || "erreur"), true); }
+}
+async function mbFoyerPush(){
+  if(!(S.foyer && S.foyer.code) || !MB_user || !mbFs()) return;
+  try{
+    await mbFs().collection("foyers").doc(S.foyer.code).set(
+      { [mbMaCleFoyer()]: JSON.stringify(S) },
+      { merge: true });
+  }catch(_){}
+}
+async function mbFoyerPull(){
+  if(!(S.foyer && S.foyer.code) || !MB_user || !mbFs()) return;
+  try{
+    const doc = await mbFs().collection("foyers").doc(S.foyer.code).get();
+    if(!doc.exists) return;
+    const d = doc.data();
+    const autre = S.foyer.role === "proprietaire" ? d.dataPart : d.dataP;
+    const partenaireConnecte = !!d.partenaire;
+    if(autre){
+      try{ const charge = JSON.parse(autre); if(charge && charge.settings) MB_donneesPartenaire = charge; }catch(_){}
+    }
+    if(S.foyerConnecte !== partenaireConnecte){ S.foyerConnecte = partenaireConnecte; mbSaveSansReplan(); renderSync(); }
+  }catch(_){}
+}
+async function mbFoyerAppliquer(){
+  if(!MB_donneesPartenaire){ toast("Aucun budget partenaire reçu pour l'instant."); return; }
+  if(S.partner && !confirm("Remplacer le budget partenaire actuel par la version du cloud ?")) return;
+  const data = MB_donneesPartenaire;
+  S.partner = { v:1, nom:S.partnerNom || "Partenaire", settings:(data.settings && data.settings.revenus ? data.settings : defaultSettings()), budgets:(data.budgets||{}), transactions:(data.transactions||[]), goals:(data.goals||[]) };
+  S.partner.settings = data.settings || S.partner.settings;
+  save(); render();
+  toast("💑 Budget du partenaire mis à jour depuis le cloud.");
+}
 
 function masquerMur(){
   try{ sessionStorage.setItem("mbMurPasse", "1"); }catch(_){}
@@ -3718,6 +3825,17 @@ document.addEventListener("click", async e=>{
     S.sync = { on:false }; save(); renderSync(); majSyncBadge(); toast("Synchro désactivée.");
     return;
   }
+  if(a==="foyer-creer"){ mbFoyerCreer(); return; }
+  if(a==="foyer-rejoindre"){
+    const c = (document.getElementById("foyer-code")?.value || "").trim();
+    mbFoyerRejoindre(c); return;
+  }
+  if(a==="foyer-appliquer"){ mbFoyerAppliquer(); return; }
+  if(a==="foyer-quitter"){
+    if(!confirm("Quitter la synchro du couple ?\n\nVos données locales ne changent pas. Le code d'invitation sera libéré.")) return;
+    S.foyer = null; MB_donneesPartenaire = null; save(); render(); toast("Synchro du couple quittée.");
+    return;
+  }
   if(a==="compte-open"){ mbPopToggle(true); return; }
   if(a==="sync-badge"){ UI.tab = "compte"; render(); setTimeout(()=>document.getElementById("sync-zone")?.scrollIntoView({block:"center"}), 100); return; }
   if(a==="compte-goto-settings"){ mbPopToggle(false); UI.tab = "compte"; render(); return; }
@@ -3752,7 +3870,7 @@ window.addEventListener("DOMContentLoaded", ()=>{
       mbInitFait = true;
       majMur();
       renderCompte(); renderSync(); majSyncBadge();
-      if(u && !avant){ toast("✅ Connecté : " + u.email); mbCheckCloud(); mbEcouterCloud(); }
+      if(u && !avant){ toast("✅ Connecté : " + u.email); mbCheckCloud(); mbEcouterCloud(); mbFoyerPull(); }
       if(!u && avant){ toast("Déconnecté."); }
       if(!u) mbStopEcoute();
     });
