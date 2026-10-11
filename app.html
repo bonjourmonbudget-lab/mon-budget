@@ -3539,33 +3539,46 @@ function majSyncBadge(){
 }
 setInterval(()=>{ if(S && S.sync && S.sync.on && MB_user && !MB_syncBusy) mbCheckCloud(); }, 300000);
 
-/* --- Phase 3 : écoute temps réel du cloud (mise à jour automatique entre appareils) --- */
-let MB_syncUnsub = null;
+/* --- Phase 3 : synchro quasi temps réel entre appareils ---
+   Essaye l'écoute instantanée (onSnapshot) ; si la connexion persistante est
+   bloquée (websocket), bascule sur un sondage léger toutes les 20 s. --- */
+let MB_syncUnsub = null, MB_syncPoll = null;
+function mbTraiterCloud(d){
+  if(!d || !((d.v || 0) > (S.sync.v || 0))) return; // notre propre envoi ou déjà à jour
+  // Prudence : ne jamais écraser pendant un envoi, une saisie en cours, ou si le local est plus récent
+  const occupe = MB_syncBusy || MB_pushTimer;
+  const saisieEnCours = document.activeElement && document.activeElement !== document.body &&
+                        /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  const localPlusRecent = S.savedAt && d.maj && d.maj.toMillis && (S.savedAt > d.maj.toMillis() + 2000);
+  if(occupe || saisieEnCours || localPlusRecent){
+    MB_cloudDevant = true; majSyncBadge();
+    if(!occupe) toast("📥 Une version plus récente attend dans le cloud — onglet Compte → 📥 Récupérer.");
+    return;
+  }
+  mbAppliquerCloud(d);
+}
 function mbEcouterCloud(){
-  if(MB_syncUnsub || !MB_user || !(S && S.sync && S.sync.on) || !mbFs()) return;
+  mbStopEcoute();
+  if(!MB_user || !(S && S.sync && S.sync.on) || !mbFs()) return;
   try{
     MB_syncUnsub = mbFs().collection("users").doc(MB_user.uid).collection("sync").doc("main")
-      .onSnapshot(doc => {
-        if(!doc.exists) return;
-        const d = doc.data();
-        if(!d || !((d.v || 0) > (S.sync.v || 0))) return; // notre propre envoi ou déjà à jour
-        // Prudence : ne jamais écraser pendant un envoi, une saisie en cours, ou si le local est plus récent
-        const occupe = MB_syncBusy || MB_pushTimer;
-        const saisieEnCours = document.activeElement && document.activeElement !== document.body &&
-                              /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
-        const localPlusRecent = S.savedAt && d.maj && d.maj.toMillis && (S.savedAt > d.maj.toMillis() + 2000);
-        if(occupe || saisieEnCours || localPlusRecent){
-          MB_cloudDevant = true; majSyncBadge();
-          if(!occupe) toast("📥 Une version plus récente attend dans le cloud — onglet Compte → 📥 Récupérer.");
-          return;
-        }
-        mbAppliquerCloud(d);
-      }, () => { MB_syncUnsub = null; });
-  }catch(_){}
+      .onSnapshot(doc => { if(doc.exists) mbTraiterCloud(doc.data()); }, () => mbSyncSondage());
+  }catch(_){ mbSyncSondage(); }
+}
+function mbSyncSondage(){
+  if(MB_syncPoll || !MB_user || !(S && S.sync && S.sync.on) || !mbFs()) return;
+  MB_syncPoll = setInterval(async ()=>{
+    if(document.hidden || MB_syncBusy || MB_pushTimer || !MB_user) return;
+    try{
+      const doc = await mbFs().collection("users").doc(MB_user.uid).collection("sync").doc("main").get();
+      if(doc.exists) mbTraiterCloud(doc.data());
+    }catch(_){}
+  }, 20000);
 }
 function mbStopEcoute(){
   if(MB_syncUnsub){ try{ MB_syncUnsub(); }catch(_){} }
-  MB_syncUnsub = null;
+  if(MB_syncPoll){ clearInterval(MB_syncPoll); }
+  MB_syncUnsub = null; MB_syncPoll = null;
 }
 async function mbAppliquerCloud(d){
   try{
