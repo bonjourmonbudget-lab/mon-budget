@@ -2372,11 +2372,18 @@ function renderCouple(){
         </div>
       ` : `
         <div class="row" style="gap:10px;flex-wrap:wrap">
-          <span class="badge ok">Foyer ${esc(S.foyer.code)}</span>
+          <span class="badge ok">Foyer actif</span>
           <span style="color:var(--muted);font-size:12.5px">${S.foyer.role === "proprietaire" ? "Vous êtes le titulaire de l'invitation" : "Vous avez rejoint ce foyer"}</span>
-          ${MB_donneesPartenaire ? `<button class="btn btn-grad btn-sm" data-action="foyer-appliquer">📥 Mettre à jour le budget partenaire</button>` : `<span class="badge warn">Partenaire pas encore connecté</span>`}
           <button class="btn btn-danger btn-sm" data-action="foyer-quitter">Quitter</button>
         </div>
+        ${S.foyer.role === "proprietaire" && !MB_donneesPartenaire ? `
+          <div style="margin-top:14px;text-align:center">
+            <p style="color:var(--muted);font-size:12.5px;margin:0 0 8px">✉️ <b>Code à donner à votre partenaire</b> (il le saisit ici même, sur son appareil) :</p>
+            <div style="display:inline-block;border:2px dashed rgba(167,139,250,.6);border-radius:14px;padding:12px 30px;background:rgba(167,139,250,.08)">
+              <span style="font-size:28px;font-weight:800;letter-spacing:6px;font-family:monospace;color:var(--text-strong)">${esc(S.foyer.code)}</span>
+            </div>
+          </div>
+        ` : (MB_donneesPartenaire ? `<div class="row" style="margin-top:12px"><button class="btn btn-grad btn-sm" data-action="foyer-appliquer">📥 Mettre à jour le budget partenaire</button></div>` : `<span class="badge warn" style="margin-top:12px">En attente du partenaire…</span>`)}
       `}
       <div id="foyer-status" style="margin-top:8px;font-size:12.5px;min-height:16px;color:var(--muted)"></div>
     </div>`;
@@ -3650,7 +3657,7 @@ async function mbFoyerCreer(){
       majP: firebase.firestore.FieldValue.serverTimestamp() });
     S.foyer = { code, role: "proprietaire" };
     save(); render();
-    foyerMsg("🔗 Invitation créée ! Donnez ce code à votre partenaire : " + code + " (il le saisit ici même, sur son appareil).");
+    foyerMsg("🔗 Invitation créée ! Le code ci-dessous est celui à donner à votre partenaire.");
   }catch(e){ foyerMsg("Création impossible : " + ((e && (e.code || e.message)) || "erreur"), true); }
 }
 async function mbFoyerRejoindre(code){
