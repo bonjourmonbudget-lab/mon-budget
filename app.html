@@ -3539,6 +3539,50 @@ function majSyncBadge(){
 }
 setInterval(()=>{ if(S && S.sync && S.sync.on && MB_user && !MB_syncBusy) mbCheckCloud(); }, 300000);
 
+/* --- Phase 3 : écoute temps réel du cloud (mise à jour automatique entre appareils) --- */
+let MB_syncUnsub = null;
+function mbEcouterCloud(){
+  if(MB_syncUnsub || !MB_user || !(S && S.sync && S.sync.on) || !mbFs()) return;
+  try{
+    MB_syncUnsub = mbFs().collection("users").doc(MB_user.uid).collection("sync").doc("main")
+      .onSnapshot(doc => {
+        if(!doc.exists) return;
+        const d = doc.data();
+        if(!d || !((d.v || 0) > (S.sync.v || 0))) return; // notre propre envoi ou déjà à jour
+        // Prudence : ne jamais écraser pendant un envoi, une saisie en cours, ou si le local est plus récent
+        const occupe = MB_syncBusy || MB_pushTimer;
+        const saisieEnCours = document.activeElement && document.activeElement !== document.body &&
+                              /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+        const localPlusRecent = S.savedAt && d.maj && d.maj.toMillis && (S.savedAt > d.maj.toMillis() + 2000);
+        if(occupe || saisieEnCours || localPlusRecent){
+          MB_cloudDevant = true; majSyncBadge();
+          if(!occupe) toast("📥 Une version plus récente attend dans le cloud — onglet Compte → 📥 Récupérer.");
+          return;
+        }
+        mbAppliquerCloud(d);
+      }, () => { MB_syncUnsub = null; });
+  }catch(_){}
+}
+function mbStopEcoute(){
+  if(MB_syncUnsub){ try{ MB_syncUnsub(); }catch(_){} }
+  MB_syncUnsub = null;
+}
+async function mbAppliquerCloud(d){
+  try{
+    const charge = JSON.parse(d.data);
+    if(!charge || !charge.settings) return;
+    appliquerEtat(charge);
+    S.sync = S.sync || { on:true };
+    S.sync.v = d.v || (S.sync.v + 1);
+    S.sync.dernier = new Date().toLocaleString("fr-FR");
+    MB_cloudDevant = false;
+    mbSaveSansReplan();
+    render(); renderSync(); majSyncBadge();
+    toast("🔄 Mis à jour depuis un autre appareil.");
+  }catch(_){ MB_cloudDevant = true; majSyncBadge(); }
+}
+document.addEventListener("visibilitychange", ()=>{ document.hidden ? mbStopEcoute() : mbEcouterCloud(); });
+
 function masquerMur(){
   try{ sessionStorage.setItem("mbMurPasse", "1"); }catch(_){}
   const m = document.getElementById("mur-compte");
@@ -3642,7 +3686,7 @@ document.addEventListener("click", async e=>{
   if(a==="sync-activer"){
     if(!MB_user){ toast("Connectez-vous d'abord (bouton en haut à droite)."); return; }
     S.sync = { on:true, v:0 };
-    save(); renderSync(); majSyncBadge();
+    save(); renderSync(); majSyncBadge(); mbEcouterCloud();
     toast("🔄 Synchro activée — vos données suivent votre compte.");
     planPushSynchro();
     return;
@@ -3657,6 +3701,7 @@ document.addEventListener("click", async e=>{
   }
   if(a==="sync-off"){
     if(!confirm("Désactiver la synchro ?\n\nVos données locales ne changent pas — vous pourrez la réactiver à tout moment.")) return;
+    mbStopEcoute();
     S.sync = { on:false }; save(); renderSync(); majSyncBadge(); toast("Synchro désactivée.");
     return;
   }
@@ -3694,8 +3739,9 @@ window.addEventListener("DOMContentLoaded", ()=>{
       mbInitFait = true;
       majMur();
       renderCompte(); renderSync(); majSyncBadge();
-      if(u && !avant){ toast("✅ Connecté : " + u.email); mbCheckCloud(); }
-      if(!u && avant) toast("Déconnecté.");
+      if(u && !avant){ toast("✅ Connecté : " + u.email); mbCheckCloud(); mbEcouterCloud(); }
+      if(!u && avant){ toast("Déconnecté."); }
+      if(!u) mbStopEcoute();
     });
     // Rafraîchir l'état « email vérifié » quand il change (après clic sur le lien de validation)
     setInterval(()=>{ if(MB_user && !MB_user.emailVerified) MB_user.reload().then(()=>{ if(MB_user && MB_user.emailVerified) renderCompte(); }).catch(()=>{}); }, 30000);
