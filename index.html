@@ -301,7 +301,7 @@
     </div>
   </section>
 
-  <section id="inscription">
+  <section id="inscription" hidden>
     <div class="cta-final">
       <h2>Soyez prévenu des nouveautés</h2>
       <p class="sect-sub">Mode couple, export PDF, synchro : une brève par mois maximum, jamais de spam.</p>
@@ -309,6 +309,7 @@
         <input type="email" id="insc-email" placeholder="votre@email.fr" required>
         <button class="btn btn-grad" type="submit">Me prévenir</button>
       </form>
+      <p style="font-size:12px;color:var(--muted);margin:10px 0 0">Votre adresse ne sert qu'à vous envoyer ces nouveautés (une brève par mois au plus) et n'est jamais revendue. Désinscription à tout moment sur simple demande.</p>
       <div class="form-msg" id="insc-msg"></div>
     </div>
   </section>
@@ -383,7 +384,15 @@ document.querySelectorAll("[data-buy]").forEach(btn => {
   });
 });
 
-/* ---- Inscription : endpoint configuré, sinon liste locale ---- */
+/* ---- Inscription : le formulaire n'apparaît que si un endpoint est configuré (CONFIG.waitlistEndpoint).
+   Sans endpoint, rien ne serait enregistré : on ne montre donc pas de formulaire. ---- */
+if (CONFIG.waitlistEndpoint) {
+  const sec = document.getElementById("inscription");
+  if (sec) sec.hidden = false;
+} else {
+  const bs = document.querySelector('[data-buy="sync"]');
+  if (bs) bs.remove();
+}
 document.getElementById("waitlist-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("insc-email").value.trim();
@@ -393,29 +402,20 @@ document.getElementById("waitlist-form").addEventListener("submit", async (e) =>
     msg.textContent = "Saisissez une adresse email valide.";
     return;
   }
-  if (CONFIG.waitlistEndpoint) {
-    try {
-      await fetch(CONFIG.waitlistEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source: "landing", date: new Date().toISOString() })
-      });
-      msg.style.color = "var(--green)";
-      msg.textContent = "C'est enregistré — à très bientôt dans votre boîte mail !";
-      document.getElementById("insc-email").value = "";
-      return;
-    } catch (err) { /* repli local ci-dessous */ }
-  }
+  if (!CONFIG.waitlistEndpoint) return;
   try {
-    const list = JSON.parse(localStorage.getItem("monBudget.waitlist") || "[]");
-    if (!list.includes(email)) list.push(email);
-    localStorage.setItem("monBudget.waitlist", JSON.stringify(list));
+    const rep = await fetch(CONFIG.waitlistEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ email, source: "landing", date: new Date().toISOString() })
+    });
+    if (!rep.ok) throw new Error("HTTP " + rep.status);
     msg.style.color = "var(--green)";
-    msg.textContent = "C'est noté ! (email enregistré localement — branchez un endpoint pour la collecte réelle)";
+    msg.textContent = "C'est enregistré — à très bientôt dans votre boîte mail !";
     document.getElementById("insc-email").value = "";
   } catch (err) {
     msg.style.color = "var(--red)";
-    msg.textContent = "Impossible d'enregistrer l'email pour le moment.";
+    msg.textContent = "Impossible d'enregistrer votre adresse pour le moment. Réessayez plus tard.";
   }
 });
 
