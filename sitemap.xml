@@ -1,37 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://bonjourmonbudget-lab.github.io/mon-budget/</loc>
+    <loc>https://bonjourmonbudget.app/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://bonjourmonbudget-lab.github.io/mon-budget/methode-enveloppes.html</loc>
+    <loc>https://bonjourmonbudget.app/methode-enveloppes.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bonjourmonbudget-lab.github.io/mon-budget/alternative-applis-budget.html</loc>
+    <loc>https://bonjourmonbudget.app/alternative-applis-budget.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bonjourmonbudget-lab.github.io/mon-budget/budget-a-deux.html</loc>
+    <loc>https://bonjourmonbudget.app/budget-a-deux.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bonjourmonbudget-lab.github.io/mon-budget/budget-enfants.html</loc>
+    <loc>https://bonjourmonbudget.app/budget-enfants.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bonjourmonbudget-lab.github.io/mon-budget/fonds-urgence.html</loc>
+    <loc>https://bonjourmonbudget.app/fonds-urgence.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bonjourmonbudget-lab.github.io/mon-budget/app.html</loc>
+    <loc>https://bonjourmonbudget.app/app.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://bonjourmonbudget-lab.github.io/mon-budget/sitemap.xml
+Sitemap: https://bonjourmonbudget.app/sitemap.xml
