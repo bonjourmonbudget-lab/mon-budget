@@ -457,7 +457,7 @@
     <button data-tab="compte">Compte</button>
     <button id="btn-undo" title="Annuler la dernière action" style="display:none">↩ Annuler</button>
   </nav>
-  <button id="sync-badge" data-action="sync-badge" hidden title="Synchro chiffrée" style="margin-left:8px;display:inline-flex;align-items:center;gap:5px;background:var(--nav-active);border:1px solid var(--border-2);color:#d8d8e4;padding:8px 12px;border-radius:10px;font-weight:600;font-size:13.5px;font-family:inherit;cursor:pointer;transition:.15s"></button>
+  <button id="sync-badge" data-action="sync-badge" hidden title="Synchro" style="margin-left:8px;display:inline-flex;align-items:center;gap:5px;background:var(--nav-active);border:1px solid var(--border-2);color:#d8d8e4;padding:8px 12px;border-radius:10px;font-weight:600;font-size:13.5px;font-family:inherit;cursor:pointer;transition:.15s"></button>
   <button id="btn-compte" data-action="compte-open" title="Mon compte"></button>
 </header>
 
@@ -473,7 +473,7 @@
     <h2>Créez votre compte gratuit pour ouvrir l'application</h2>
     <div class="mur-points">
       <span>✓ <b>30 secondes</b> — email, mot de passe, validation par email</span>
-      <span>✓ <b>Vos données budgétaires restent sur votre appareil</b> — le compte ne retient que votre email</span>
+      <span>✓ <b>Vos données budgétaires restent sur votre appareil</b> par défaut — le compte retient votre email ; une copie en ligne n'existe que si vous activez la synchro</span>
       <span>✓ <b>Sans abonnement</b> — version gratuite complète, licence à vie 19 € pour le couple et la famille</span>
     </div>
     <div class="row" style="flex-wrap:wrap;gap:8px">
@@ -494,7 +494,7 @@
 
 <main id="app"></main>
 
-<footer>Mon Budget — 2026 · Vos données restent sur votre machine (stockage local du navigateur).</footer>
+<footer>Mon Budget — 2026 · Vos données budgétaires sont stockées sur votre appareil ; une copie en ligne n'existe que si vous activez la synchro.</footer>
 <button id="haut-page" title="Retour en haut de page" style="display:none">⬆</button>
 
 <!-- Connexion par email (Firebase Auth) — la config est publique par conception -->
@@ -1761,7 +1761,7 @@ function renderCompteTab(){
   return `
   <section class="hero" style="text-align:center">
     <h1><span class="grad-text">Compte</span> &amp; application</h1>
-    <p class="sub" style="margin-left:auto;margin-right:auto;max-width:640px">Votre licence Mon Budget Plus, votre compte, l'apparence, l'installation et vos sauvegardes. Vos données budgétaires restent sur cet appareil.</p>
+    <p class="sub" style="margin-left:auto;margin-right:auto;max-width:640px">Votre licence Mon Budget Plus, votre compte, l'apparence, l'installation et vos sauvegardes. Vos données budgétaires restent sur cet appareil, sauf si vous activez la synchro.</p>
   </section>
 
   <section class="section" style="display:flex;flex-direction:column;gap:16px;max-width:760px;margin:48px auto 0">
@@ -1785,13 +1785,13 @@ function renderCompteTab(){
 
     <div class="card settings-card">
       <h3 style="font-size:16px">Mon compte</h3>
-      <p style="color:var(--muted);font-size:12.5px;margin:8px 0 12px">Créez votre compte avec <b>email et mot de passe</b> (validation par email) pour sécuriser votre licence Mon Budget Plus et la retrouver sur un nouvel appareil. Le passage au Premium se fait ici, avec la clé reçue après achat. <b>Vos données budgétaires restent sur cet appareil</b> — le compte ne retient que votre email, jamais vos chiffres.</p>
+      <p style="color:var(--muted);font-size:12.5px;margin:8px 0 12px">Créez votre compte avec <b>email et mot de passe</b> (validation par email) pour sécuriser votre licence Mon Budget Plus et la retrouver sur un nouvel appareil. Le passage au Premium se fait ici, avec la clé reçue après achat. <b>Vos données budgétaires restent sur cet appareil</b> par défaut — le compte retient votre email ; vos chiffres ne partent en ligne que si vous activez la synchro.</p>
       <div id="compte-zone"><div class="empty" style="padding:12px">Chargement du compte…</div></div>
     </div>
 
     <div class="card settings-card">
       <h3 style="font-size:16px">🔄 Synchro multi-appareils</h3>
-      <p style="color:var(--muted);font-size:12.5px;margin:8px 0 12px">Retrouvez votre budget sur tous vos appareils — <b>gratuit, automatique, sans mot de passe à retenir</b>. Vos données suivent votre compte et ne sont accessibles qu'avec votre connexion. Sans compte ou hors-ligne, l'application fonctionne normalement et vos données restent sur votre appareil.</p>
+      <p style="color:var(--muted);font-size:12.5px;margin:8px 0 12px">Retrouvez votre budget sur tous vos appareils — <b>gratuit, automatique, sans mot de passe à retenir</b>. Vos données suivent votre compte : <b>une copie de votre budget est enregistrée sur nos serveurs (Google Firebase), non chiffrée</b>, et n'est accessible qu'avec votre connexion. Sans la synchro, vos données restent sur votre appareil.</p>
       <div id="sync-zone"><div class="empty" style="padding:12px">Chargement…</div></div>
     </div>
 
@@ -1848,7 +1848,7 @@ function renderCompteTab(){
 
     <div class="card settings-card">
       <h3 style="font-size:16px">Données</h3>
-      <p class="sub" style="color:var(--muted);font-size:13px;margin:8px 0 14px">Stockage : IndexedDB (persistant, compatible mobile) + miroir local, migration automatique. Tout reste sur votre machine. Exportez régulièrement une sauvegarde.</p>
+      <p class="sub" style="color:var(--muted);font-size:13px;margin:8px 0 14px">Stockage : IndexedDB (persistant, compatible mobile) + miroir local, migration automatique. Tout reste sur votre appareil (sauf synchro activée). Exportez régulièrement une sauvegarde.</p>
       <div class="row" style="flex-wrap:wrap;gap:10px">
         <button class="btn btn-grad btn-sm" id="btn-install" data-action="install-app" style="display:none">📲 Installer l'application</button>
         <button class="btn btn-ghost btn-sm" data-action="export-json">⬇ Sauvegarde JSON</button>
@@ -2363,7 +2363,7 @@ function renderCouple(){
   const carteFoyer = `
     <div class="card">
       <h3 style="font-size:16px">🔗 Synchro du couple</h3>
-      <p style="color:var(--muted);font-size:12.5px;margin:8px 0 12px">Le budget de votre partenaire se met à jour tout seul via le cloud — plus besoin de s'envoyer des fichiers JSON. Un seul achat de licence Plus par foyer.</p>
+      <p style="color:var(--muted);font-size:12.5px;margin:8px 0 12px">Le budget de votre partenaire se met à jour tout seul via le cloud — plus besoin de s'envoyer des fichiers JSON. En contrepartie, le budget de chacun est enregistré sur nos serveurs (Google Firebase), non chiffré. Un seul achat de licence Plus par foyer.</p>
       ${!(S.foyer && S.foyer.code) ? `
         <div class="row" style="flex-wrap:wrap;gap:8px;align-items:flex-end">
           <button class="btn btn-grad btn-sm" data-action="foyer-creer">🔗 Créer une invitation</button>
@@ -2392,7 +2392,7 @@ function renderCouple(){
     <div class="card" style="text-align:center;padding:36px 24px">
       <div style="font-size:32px">👥</div>
       <h3 style="margin-top:10px;font-size:16px">Importer le budget de votre partenaire</h3>
-      <p style="color:var(--muted);font-size:13px;margin:10px auto 16px;max-width:460px">Sur l'appareil de votre partenaire, deux options : sa <b>sauvegarde JSON</b> (Compte → Données → ⬇ Sauvegarde JSON — tout le budget) ou un <b>CSV de ses transactions</b> (Vos dépenses → Exporter en CSV — dépenses seules). Revenez ici et importez le fichier — les données restent sur votre machine.</p>
+      <p style="color:var(--muted);font-size:13px;margin:10px auto 16px;max-width:460px">Sur l'appareil de votre partenaire, deux options : sa <b>sauvegarde JSON</b> (Compte → Données → ⬇ Sauvegarde JSON — tout le budget) ou un <b>CSV de ses transactions</b> (Vos dépenses → Exporter en CSV — dépenses seules). Revenez ici et importez le fichier — les données restent sur votre appareil.</p>
       <input type="file" id="partner-file" accept=".json,.csv,.txt,application/json,text/csv" style="display:none">
       <button class="btn btn-grad" data-action="partner-open">⬆ Importer (JSON ou CSV)</button>
     </div>` : `
@@ -3352,7 +3352,7 @@ if (window.matchMedia("(display-mode: standalone)").matches) {
 /* =====================================================================
    MON COMPTE — connexion par email (Firebase Auth, lien magique + mot de passe)
    Le compte ne sert qu'à identifier l'utilisateur et sécuriser sa licence.
-   Aucune donnée budgétaire ne quitte l'appareil.
+   Aucune donnée budgétaire ne quitte l'appareil, sauf si l'utilisateur active la synchro (Firestore, non chiffré).
    ===================================================================== */
 const MB_FB = {
   apiKey: "AIzaSyD8lo4AK60kbZM7pJfP_p7vI0e-IAvZ48Q",
@@ -3403,11 +3403,11 @@ function renderComptePop(){
         <button class="btn btn-ghost btn-sm" data-action="compte-goto-settings">Onglet Compte</button>
         <button class="btn btn-ghost btn-sm" data-action="compte-logout">Se déconnecter</button>
       </div>
-      <p style="color:var(--muted-2);font-size:11.5px;margin:10px 0 0">Vos données budgétaires restent sur cet appareil.</p>`;
+      <p style="color:var(--muted-2);font-size:11.5px;margin:10px 0 0">Vos données budgétaires restent sur cet appareil par défaut ; une copie en ligne n'existe que si vous activez la synchro.</p>`;
   } else {
     html = `
       <div style="font-weight:700;font-size:14px;margin-bottom:4px">Connexion / Inscription</div>
-      <p style="color:var(--muted);font-size:12px;margin:0 0 10px">Créez votre compte avec email et mot de passe — un email de validation vous sera envoyé. Vos données budgétaires restent sur cet appareil.</p>
+      <p style="color:var(--muted);font-size:12px;margin:0 0 10px">Créez votre compte avec email et mot de passe — un email de validation vous sera envoyé. Vos données budgétaires restent sur cet appareil par défaut ; une copie en ligne n'existe que si vous activez la synchro.</p>
       <div class="row" style="flex-wrap:wrap;gap:8px">
         <input class="lab" id="compte-email" type="email" placeholder="votre@email.fr" style="flex:1;min-width:150px">
         <input class="lab" id="compte-mdp" type="password" placeholder="Mot de passe (6 car. min.)" style="flex:1;min-width:150px">
@@ -3566,11 +3566,11 @@ function majSyncBadge(){
   if(!(S && ((S.sync && S.sync.on) || S.foyer)) || !mbDispo()){ b.hidden = true; return; }
   b.hidden = false;
   let txt = "✓", titre = "Synchro à jour";
-  if(MB_syncBusy){ txt = "🔄"; titre = "Envoi chiffré en cours…"; }
+  if(MB_syncBusy){ txt = "🔄"; titre = "Envoi en cours…"; }
   else if(MB_syncErreur){ txt = "⚠"; titre = "Dernier envoi en échec : " + MB_syncErreur; }
   else if(MB_cloudDevant){ txt = "📥"; titre = "Des données plus récentes sont dans le cloud — Récupérer"; }
   else if(!MB_user){ txt = "⏸"; titre = "Connectez-vous pour synchroniser"; }
-  else if(MB_pushTimer){ txt = "…"; titre = "Modification enregistrée — envoi chiffré dans quelques secondes"; }
+  else if(MB_pushTimer){ txt = "…"; titre = "Modification enregistrée — envoi dans quelques secondes"; }
   b.textContent = txt; b.title = titre;
   b.style.borderColor = (MB_syncErreur || MB_cloudDevant) ? "rgba(251,191,36,.5)" : "var(--border-2)";
 }

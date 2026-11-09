@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0b0b12">
-<meta name="description" content="Mon Budget — le budget mensuel 100 % privé : enveloppes récurrentes, import de relevés, objectifs d'épargne. Hors-ligne, compte gratuit (email + mot de passe), vos données restent chez vous.">
+<meta name="description" content="Mon Budget — budget mensuel par enveloppes, sans connexion bancaire : enveloppes récurrentes, import de relevés, objectifs d'épargne. Hors-ligne, compte gratuit (email + mot de passe), données stockées sur votre appareil par défaut.">
 <meta name="keywords" content="application budget, méthode des enveloppes, budget sans abonnement, budget sans connexion bancaire, alternative YNAB France, budget familial gratuit, gestion budget mensuel">
 <meta name="author" content="Mon Budget">
 <meta name="robots" content="index, follow">
@@ -14,13 +14,13 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Mon Budget">
 <meta property="og:title" content="Mon Budget — 19 € à vie, sans abonnement, sans connexion bancaire">
-<meta property="og:description" content="La méthode des enveloppes automatisée. Vos données restent sur votre appareil. Version gratuite complète — installez-la en 10 secondes.">
+<meta property="og:description" content="La méthode des enveloppes automatisée, sans connexion bancaire. Données stockées sur votre appareil par défaut. Version gratuite complète — installez-la en 10 secondes.">
 <meta property="og:url" content="https://bonjourmonbudget-lab.github.io/mon-budget/">
 <meta property="og:image" content="https://bonjourmonbudget-lab.github.io/mon-budget/apercu.png">
 <meta property="og:locale" content="fr_FR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Mon Budget — 19 € à vie, sans abonnement">
-<meta name="twitter:description" content="La méthode des enveloppes automatisée. Vos données restent sur votre appareil.">
+<meta name="twitter:description" content="La méthode des enveloppes automatisée, sans connexion bancaire. Données sur votre appareil par défaut.">
 <meta name="twitter:image" content="https://bonjourmonbudget-lab.github.io/mon-budget/apercu.png">
 <!-- Données structurées pour Google -->
 <script type="application/ld+json">
@@ -31,7 +31,7 @@
   "applicationCategory": "FinanceApplication",
   "operatingSystem": "Web, Windows, macOS, Linux, Android, iOS",
   "inLanguage": "fr-FR",
-  "description": "Application de budget en méthode des enveloppes, 100 % locale : aucune connexion bancaire, données sur votre appareil, fonctionne hors-ligne. Version gratuite et licence à vie à 19 €.",
+  "description": "Application de budget en méthode des enveloppes, aucune connexion bancaire, données stockées sur votre appareil par défaut, fonctionne hors-ligne. Version gratuite et licence à vie à 19 €.",
   "offers": {
     "@type": "Offer",
     "price": "19.00",
@@ -43,14 +43,8 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icon-192.png">
 <title>Mon Budget — Le budget qui ne connecte jamais votre banque</title>
-<!-- Compteur de visites (Analytics via Firebase) — page marketing uniquement, l'application ne mesure rien -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-P31JFZ6KP1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-P31JFZ6KP1');
-</script>
+<!-- Compteur de visites (Google Analytics, chargé seulement après accord : voir consent.js) — pages publiques uniquement, l'application ne mesure rien -->
+<script src="consent.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -180,9 +174,9 @@
 <main class="wrap">
 
   <section class="hero" style="padding-top:64px">
-    <span class="pill">🔒 100 % privé · Compte gratuit requis · Hors-ligne</span>
+    <span class="pill">🔒 Sans connexion bancaire · Compte gratuit requis · Hors-ligne</span>
     <h1>Le budget qui ne connecte <span class="grad-text">jamais votre banque</span></h1>
-    <p class="sub">Importez vos relevés en CSV, suivez vos enveloppes mensuelles, épargnez pour vos projets. Vos données restent sur votre machine — pas sur un serveur.</p>
+    <p class="sub">Importez vos relevés en CSV, suivez vos enveloppes mensuelles, épargnez pour vos projets. Vos données sont stockées sur votre appareil par défaut, et l'app ne se connecte jamais à votre banque.</p>
     <div class="ctas">
       <a class="btn btn-grad" href="app.html">Ouvrir l'application · Compte gratuit →</a>
       <a class="btn btn-ghost" href="#tarifs">Voir les tarifs</a>
@@ -194,7 +188,7 @@
   </section>
 
   <div class="trust">
-    <div>🔐 Données 100 % locales</div>
+    <div>🔐 Données sur votre appareil</div>
     <div>👤 Compte gratuit : email &amp; mot de passe</div>
     <div>📴 Fonctionne hors-ligne</div>
     <div>🇫🇷 En français, en euros</div>
@@ -254,7 +248,7 @@
           <li>Toutes les fonctionnalités actuelles</li>
           <li>Enveloppes, import CSV, bilan, objectifs</li>
           <li>Installation PC & mobile</li>
-          <li>Hors-ligne, données locales</li>
+          <li>Hors-ligne, données sur votre appareil</li>
           <li class="off">Thème clair & « grand contraste »</li>
           <li class="off">Export PDF du bilan</li>
           <li class="off">Mode couple</li>
@@ -284,7 +278,7 @@
       <div class="plan">
         <h3>Synchro multi-appareils <span class="soon">en préparation</span></h3>
         <div class="price">Gratuit <small>pour tous</small></div>
-        <div class="per">automatique, sans mot de passe — votre budget suit votre compte</div>
+        <div class="per">automatique, sans mot de passe — votre budget suit votre compte (copie sur nos serveurs, non chiffrée)</div>
         <ul>
           <li>Synchro PC ↔ mobile automatique</li>
           <li>Mode couple en temps réel <b>(inclus dans Plus)</b></li>
@@ -299,11 +293,11 @@
   <section id="faq">
     <h2>Questions fréquentes</h2>
     <div class="faq">
-      <details><summary>Mes données bancaires sont-elles envoyées quelque part ?</summary><p>Non, et c'est le principe fondateur de l'app : aucune connexion à votre banque, jamais. Vos relevés sont lus localement dans votre navigateur, vos données restent sur votre machine. Le compte (inscription gratuite par email et mot de passe, avec validation par email) est <b>requis pour ouvrir l'application</b>. La synchro multi-appareils suit votre compte : seuls vos appareils connectés y accèdent.</p></details>
+      <details><summary>Mes données bancaires sont-elles envoyées quelque part ?</summary><p>Non, et c'est le principe fondateur de l'app : aucune connexion à votre banque, jamais. Vos relevés sont lus localement dans votre navigateur et votre budget est stocké sur votre appareil par défaut. Le compte (inscription gratuite par email et mot de passe, avec validation par email) est <b>requis pour ouvrir l'application</b> et ne retient que votre adresse email. <b>Si vous activez la synchro multi-appareils (facultative), une copie de votre budget est enregistrée sur nos serveurs (Google Firebase), non chiffrée</b> : elle n'est accessible qu'avec votre connexion, mais elle n'est pas illisible pour l'éditeur.</p></details>
       <details><summary>Pourquoi importer un CSV plutôt que connecter ma banque ?</summary><p>Exporter un relevé prend 30 secondes sur n'importe quel site bancaire français. En échange : zéro agrément bancaire à faire circuler, zéro risque de fuite de credentials, et un budget qui marche même si votre banque change d'API.</p></details>
-      <details><summary>Est-ce que ça marche sur téléphone ?</summary><p>Oui — installez l'app depuis votre navigateur mobile (« Ajouter à l'écran d'accueil »). La synchro automatique entre PC et mobile est en préparation : elle sera <b>gratuite pour tous les comptes</b>.</p></details>
+      <details><summary>Est-ce que ça marche sur téléphone ?</summary><p>Oui — installez l'app depuis votre navigateur mobile (« Ajouter à l'écran d'accueil »). La synchro entre PC et mobile est <b>facultative et gratuite pour tous les comptes</b> ; sans elle, votre budget reste sur chaque appareil.</p></details>
       <details><summary>Et si je perds mon ordinateur ?</summary><p>Exportez une sauvegarde JSON depuis Paramètres → Données (1 clic) et rangez-la où vous voulez. Elle se restaure en un clic sur n'importe quel appareil.</p></details>
-      <details><summary>Comment ça marche pour un couple ?</summary><p>Chacun installe l'app sur son appareil : les données restent individuelles et locales. Le <b>mode couple</b> (inclus dans Plus) consolide deux budgets en une vue foyer. Et pour la synchro temps réel (en préparation) : la synchro individuelle est <b>gratuite pour tous</b>, et le mode couple synchronisé reste <b>inclus dans la licence Plus — un seul achat par foyer</b> : le titulaire de la licence invite son/sa partenaire par email, qui reçoit un <b>accès invité gratuit</b> au budget partagé. Deux comptes, une seule licence, et le serveur ne pourra jamais lire vos données.</p></details>
+      <details><summary>Comment ça marche pour un couple ?</summary><p>Chacun installe l'app sur son appareil et garde son propre budget. Le <b>mode couple</b> (inclus dans Plus) consolide deux budgets en une vue foyer : soit en important le fichier de l'autre, soit avec la <b>synchro du couple</b> (code d'invitation) — dans ce cas, le budget de chacun est copié sur nos serveurs, <b>non chiffré</b>. Un seul achat de licence par foyer.</p></details>
     </div>
   </section>
 
@@ -322,7 +316,7 @@
 </main>
 
 <footer class="wrap">
-  © Mon Budget 2026 · Vos données restent sur votre machine · <a href="app.html">Ouvrir l'application</a><br>
+  © Mon Budget 2026 · Aucune connexion bancaire · Données sur votre appareil par défaut · <a href="app.html">Ouvrir l'application</a><br>
   <span style="font-size:12px">Guides : <a href="methode-enveloppes.html">Méthode des enveloppes</a> · <a href="alternative-applis-budget.html">Comparatif applis de budget</a> · <a href="budget-a-deux.html">Budget à deux</a> · <a href="budget-enfants.html">Enfants &amp; argent</a> · <a href="fonds-urgence.html">Fonds d'urgence</a></span>
 </footer>
 
