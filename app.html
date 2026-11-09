@@ -3869,6 +3869,7 @@ window.addEventListener("DOMContentLoaded", ()=>{
     setTimeout(()=>{ mbInitFait = true; majMur(); }, 8000);
     if(!mbDispo()) return;
     firebase.initializeApp(MB_FB);
+    firebase.auth().languageCode = "fr"; // e-mails de validation et de réinitialisation envoyés en français
     firebase.auth().onAuthStateChanged(u=>{
       const avant = MB_user;
       MB_user = u;
