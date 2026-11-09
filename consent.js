@@ -35,7 +35,7 @@
     s.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_ID;
     document.head.appendChild(s);
     window.gtag("js", new Date());
-    window.gtag("config", GA_ID);
+    window.gtag("config", GA_ID, { cookie_expires: 34128000 }); // cookies Google : 13 mois au plus
     while (file.length) { window.dataLayer.push(file.shift()); }
   }
 
@@ -69,6 +69,7 @@
       "background:#14141d;color:#f3f3f7;border:1px solid #2a2a38;border-radius:14px;padding:16px 18px;" +
       "box-shadow:0 10px 40px rgba(0,0,0,.55);font:14px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif}" +
       "#mb-cookies-bandeau b{font-weight:700}" +
+      "#mb-cookies-bandeau a{color:#a98afc}" +
       "#mb-cookies-bandeau p{margin:0 0 12px;color:#c9c9d6}" +
       "#mb-cookies-bandeau .mb-c-btns{display:flex;gap:10px;flex-wrap:wrap}" +
       "#mb-cookies-bandeau button{flex:1;min-width:130px;cursor:pointer;font:600 14px Inter,system-ui,sans-serif;" +
@@ -85,7 +86,7 @@
       "<p><b>Cookies de mesure d'audience</b><br>" +
       "Ce site peut utiliser Google Analytics pour compter les visites (pages vues, provenance, clics sur les boutons). " +
       "Rien n'est envoyé à Google sans votre accord, et l'application elle-même ne mesure rien. " +
-      "Vous pouvez changer d'avis à tout moment via le lien « Cookies » en bas de page.</p>" +
+      "Vous pouvez changer d'avis à tout moment via le lien « Cookies » en bas de page. <a href=\"cookies.html\">En savoir plus</a></p>" +
       "<div class=\"mb-c-btns\">" +
       "<button type=\"button\" id=\"mb-c-non\">Refuser</button>" +
       "<button type=\"button\" id=\"mb-c-oui\">Accepter</button></div>";
@@ -97,12 +98,20 @@
   function ajouterLienPied() {
     var pied = document.querySelector("footer");
     if (!pied || document.getElementById("mb-cookies-lien")) return;
+    if (!pied.querySelector('a[href="confidentialite.html"]')) {
+      var c = document.createElement("a");
+      c.href = "confidentialite.html"; c.textContent = "Confidentialité";
+      pied.appendChild(document.createTextNode(" · "));
+      pied.appendChild(c);
+    }
     var a = document.createElement("a");
     a.href = "#"; a.id = "mb-cookies-lien"; a.textContent = "Cookies";
     a.addEventListener("click", function (e) { e.preventDefault(); afficherBandeau(); });
     pied.appendChild(document.createTextNode(" · "));
     pied.appendChild(a);
   }
+
+  window.mbCookiesOuvrir = afficherBandeau;
 
   var memo = lire();
   if (memo) appliquer(memo);

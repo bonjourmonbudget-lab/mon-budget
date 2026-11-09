@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0b12">
+<title>Cookies et traceurs — Mon Budget</title>
+<meta name="description" content="Quels cookies et stockages locaux utilise Mon Budget, et comment accepter, refuser ou changer d'avis.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://bonjourmonbudget.app/cookies.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Mon Budget">
+<meta property="og:title" content="Cookies et traceurs — Mon Budget">
+<meta property="og:description" content="Quels cookies et stockages locaux utilise Mon Budget, et comment accepter, refuser ou changer d'avis.">
+<meta property="og:url" content="https://bonjourmonbudget.app/cookies.html">
+<meta property="og:image" content="https://bonjourmonbudget.app/apercu.png">
+<meta property="og:locale" content="fr_FR">
+<link rel="icon" type="image/png" href="icon-192.png">
+<script src="consent.js"></script>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  :root{
+    --bg:#0b0b12; --card:#14141d; --border:#23232f; --border-2:#2a2a38;
+    --text:#f3f3f7; --muted:#8d8da1; --muted-2:#6d6d80;
+    --green:#34d399; --amber:#fbbf24;
+    --grad:linear-gradient(135deg,#7c68f7,#a98afc);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;line-height:1.65}
+  .wrap{max-width:760px;margin:0 auto;padding:0 22px}
+  header{padding:26px 0;display:flex;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;text-decoration:none;color:var(--text)}
+  .btn{display:inline-block;padding:11px 20px;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none;transition:.15s}
+  .btn-grad{background:var(--grad);color:#fff}
+  .btn-ghost{border:1px solid var(--border-2);color:var(--text);background:var(--card)}
+  .grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  h1{font-size:clamp(30px,5vw,44px);line-height:1.15;letter-spacing:-.5px;margin:34px 0 14px}
+  .sub{color:var(--muted);font-size:17px;max-width:640px}
+  article{padding:26px 0 60px}
+  h2{font-size:24px;margin:44px 0 12px;letter-spacing:-.3px}
+  h3{font-size:17px;margin:26px 0 8px}
+  p{margin:12px 0;color:#c9c9d6}
+  ul,ol{margin:14px 0 14px 22px;color:#c9c9d6}
+  li{margin:7px 0}
+  strong{color:var(--text)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;margin:20px 0}
+  .etoile{color:var(--amber)}
+  .cta{background:linear-gradient(180deg,#15121f,#14141d);border:1px solid var(--border-2);border-radius:18px;padding:30px;text-align:center;margin:40px 0}
+  .cta h2{margin-top:0}
+  .env{display:flex;justify-content:space-between;align-items:center;background:#101019;border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin:9px 0}
+  .env b{font-size:14.5px}
+  .env span{color:var(--muted);font-size:13px}
+  .bar{height:7px;border-radius:99px;background:#26263a;overflow:hidden;margin-top:7px}
+  .bar i{display:block;height:100%;border-radius:99px;background:var(--grad)}
+  details{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:15px 18px;margin:10px 0}
+  summary{cursor:pointer;font-weight:600;font-size:15px}
+  details p{margin:10px 0 2px;font-size:14.5px}
+  footer{border-top:1px solid var(--border);padding:26px 0 40px;color:var(--muted-2);font-size:13px}
+  footer a{color:var(--muted)}
+  @media(max-width:600px){ header .btn{padding:9px 14px;font-size:13px} }
+
+  .note{background:#101019;border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0;font-size:14.5px;color:#c9c9d6}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:10px 12px;text-align:left;vertical-align:top;color:#c9c9d6}
+  th{background:#101019;color:var(--text);font-weight:600}
+  .maj{color:var(--muted-2);font-size:13px;margin-top:6px}
+  a{color:#a98afc}
+  .tw{overflow-x:auto}
+  h1{overflow-wrap:anywhere}
+  @media(max-width:480px){ h1{font-size:25px} .card{padding:18px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <a class="brand" href="index.html">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>
+    Mon&nbsp;<span class="grad-text">Budget</span>
+  </a>
+  <a class="btn btn-ghost" href="index.html">← Accueil</a>
+</header>
+
+<h1><span class="grad-text">Cookies</span> et traceurs</h1>
+<p class="sub">Ce qui est stocké sur votre appareil, ce qui demande votre accord, et comment changer d'avis.</p>
+
+<article>
+
+<div class="card">
+<h2 style="margin-top:0">L'essentiel</h2>
+<ul>
+<li><strong>Rien n'est envoyé à Google Analytics sans votre accord.</strong> Au premier passage, un bandeau vous demande de choisir : « Accepter » ou « Refuser ».</li>
+<li>L'<strong>application ne contient aucun outil de mesure d'audience</strong> et aucune publicité.</li>
+<li>Vous pouvez <strong>changer d'avis à tout moment</strong> avec le bouton ci-dessous ou le lien « Cookies » en bas de chaque page.</li>
+</ul>
+<p style="margin-top:14px"><button class="btn btn-grad" id="mb-choix" type="button" style="border:0;cursor:pointer;font-family:inherit">Modifier mon choix</button></p>
+</div>
+
+<h2>Ce qui est stocké sur votre appareil</h2>
+<div class="tw"><table>
+<tr><th>Nom</th><th>À quoi ça sert</th><th>Quand</th><th>Durée</th></tr>
+<tr><td>Stockage du navigateur de l'application (IndexedDB, <code>monBudget.v1</code>)</td><td>Garder votre budget, vos réglages et votre statut Plus sur votre appareil</td><td>Nécessaire au fonctionnement, sans accord préalable</td><td>Jusqu'à ce que vous l'effaciez</td></tr>
+<tr><td>Session du compte (Firebase)</td><td>Vous garder connecté</td><td>Nécessaire au fonctionnement</td><td>Jusqu'à la déconnexion</td></tr>
+<tr><td><code>mb_cookies</code></td><td>Mémoriser votre choix sur les cookies</td><td>Nécessaire, après votre choix</td><td>6 mois</td></tr>
+<tr><td><code>_ga</code>, <code>_ga_P31JFZ6KP1</code> (Google Analytics)</td><td>Compter les visites du site public : pages vues, provenance, clics sur les boutons</td><td><strong>Seulement si vous cliquez sur « Accepter »</strong></td><td>13 mois au plus</td></tr>
+</table></div>
+
+<h2>Comment retirer votre accord</h2>
+<ul>
+<li>Cliquez sur « Modifier mon choix » ci-dessus, ou sur le lien <strong>Cookies</strong> en bas de page, puis sur « Refuser ». La page se recharge et la mesure s'arrête.</li>
+<li>Vous pouvez aussi effacer les cookies et les données du site dans les réglages de votre navigateur.</li>
+</ul>
+
+<h2>Pour en savoir plus</h2>
+<p>Voir la <a href="confidentialite.html">politique de confidentialité</a>. Pour toute question : <a href="mailto:bonjour.monbudget@gmail.com">bonjour.monbudget@gmail.com</a>.</p>
+<p class="maj">Dernière mise à jour : 10 novembre 2026.</p>
+<script>
+document.getElementById("mb-choix").addEventListener("click", function(){ if (window.mbCookiesOuvrir) window.mbCookiesOuvrir(); });
+</script>
+
+</article>
+
+<footer>
+  © Mon Budget 2026 · <a href="index.html">Accueil</a> · <a href="app.html">Ouvrir l'application</a> · <a href="confidentialite.html">Confidentialité</a>
+</footer>
+</div>
+</body>
+</html>

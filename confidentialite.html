@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0b12">
+<title>Politique de confidentialité — Mon Budget</title>
+<meta name="description" content="Quelles données Mon Budget utilise, où elles sont stockées, ce que change la synchro, et comment exercer vos droits.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://bonjourmonbudget.app/confidentialite.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Mon Budget">
+<meta property="og:title" content="Politique de confidentialité — Mon Budget">
+<meta property="og:description" content="Quelles données Mon Budget utilise, où elles sont stockées, ce que change la synchro, et comment exercer vos droits.">
+<meta property="og:url" content="https://bonjourmonbudget.app/confidentialite.html">
+<meta property="og:image" content="https://bonjourmonbudget.app/apercu.png">
+<meta property="og:locale" content="fr_FR">
+<link rel="icon" type="image/png" href="icon-192.png">
+<script src="consent.js"></script>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  :root{
+    --bg:#0b0b12; --card:#14141d; --border:#23232f; --border-2:#2a2a38;
+    --text:#f3f3f7; --muted:#8d8da1; --muted-2:#6d6d80;
+    --green:#34d399; --amber:#fbbf24;
+    --grad:linear-gradient(135deg,#7c68f7,#a98afc);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;line-height:1.65}
+  .wrap{max-width:760px;margin:0 auto;padding:0 22px}
+  header{padding:26px 0;display:flex;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;text-decoration:none;color:var(--text)}
+  .btn{display:inline-block;padding:11px 20px;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none;transition:.15s}
+  .btn-grad{background:var(--grad);color:#fff}
+  .btn-ghost{border:1px solid var(--border-2);color:var(--text);background:var(--card)}
+  .grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  h1{font-size:clamp(30px,5vw,44px);line-height:1.15;letter-spacing:-.5px;margin:34px 0 14px}
+  .sub{color:var(--muted);font-size:17px;max-width:640px}
+  article{padding:26px 0 60px}
+  h2{font-size:24px;margin:44px 0 12px;letter-spacing:-.3px}
+  h3{font-size:17px;margin:26px 0 8px}
+  p{margin:12px 0;color:#c9c9d6}
+  ul,ol{margin:14px 0 14px 22px;color:#c9c9d6}
+  li{margin:7px 0}
+  strong{color:var(--text)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;margin:20px 0}
+  .etoile{color:var(--amber)}
+  .cta{background:linear-gradient(180deg,#15121f,#14141d);border:1px solid var(--border-2);border-radius:18px;padding:30px;text-align:center;margin:40px 0}
+  .cta h2{margin-top:0}
+  .env{display:flex;justify-content:space-between;align-items:center;background:#101019;border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin:9px 0}
+  .env b{font-size:14.5px}
+  .env span{color:var(--muted);font-size:13px}
+  .bar{height:7px;border-radius:99px;background:#26263a;overflow:hidden;margin-top:7px}
+  .bar i{display:block;height:100%;border-radius:99px;background:var(--grad)}
+  details{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:15px 18px;margin:10px 0}
+  summary{cursor:pointer;font-weight:600;font-size:15px}
+  details p{margin:10px 0 2px;font-size:14.5px}
+  footer{border-top:1px solid var(--border);padding:26px 0 40px;color:var(--muted-2);font-size:13px}
+  footer a{color:var(--muted)}
+  @media(max-width:600px){ header .btn{padding:9px 14px;font-size:13px} }
+
+  .note{background:#101019;border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0;font-size:14.5px;color:#c9c9d6}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:10px 12px;text-align:left;vertical-align:top;color:#c9c9d6}
+  th{background:#101019;color:var(--text);font-weight:600}
+  .maj{color:var(--muted-2);font-size:13px;margin-top:6px}
+  a{color:#a98afc}
+  .tw{overflow-x:auto}
+  h1{overflow-wrap:anywhere}
+  @media(max-width:480px){ h1{font-size:25px} .card{padding:18px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <a class="brand" href="index.html">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>
+    Mon&nbsp;<span class="grad-text">Budget</span>
+  </a>
+  <a class="btn btn-ghost" href="index.html">← Accueil</a>
+</header>
+
+<h1>Politique de <span class="grad-text">confidentialité</span></h1>
+<p class="sub">Ce que fait Mon Budget de vos données, sans jargon : ce qui reste sur votre appareil, ce qui part en ligne, et comment tout supprimer.</p>
+
+<article>
+
+<div class="card">
+<h2 style="margin-top:0">L'essentiel</h2>
+<ul>
+<li><strong>Aucune connexion à votre banque.</strong> Vos relevés (CSV, OFX) sont lus dans votre navigateur, jamais envoyés.</li>
+<li><strong>Votre budget est stocké sur votre appareil par défaut.</strong></li>
+<li><strong>Si vous activez la synchro</strong> (facultative) ou le mode couple synchronisé, une copie de vos données est enregistrée en ligne, <strong>non chiffrée de bout en bout</strong>. Voir la section 3.</li>
+<li>Pas de publicité, pas de revente de données.</li>
+<li>Mesure d'audience (Google Analytics) sur le site public <strong>uniquement avec votre accord</strong>. L'application elle-même ne mesure rien.</li>
+</ul>
+</div>
+
+<h2>1. Qui est responsable ?</h2>
+<p>Le responsable du traitement est <strong>Marc Aime</strong>, éditeur de Mon Budget. Pour toute question ou demande : <a href="mailto:bonjour.monbudget@gmail.com">bonjour.monbudget@gmail.com</a>.</p>
+
+<h2>2. Quelles données, pourquoi, où ?</h2>
+<div class="tw"><table>
+<tr><th>Donnée</th><th>Pourquoi</th><th>Où</th></tr>
+<tr><td><strong>Votre budget</strong> : revenus, charges, transactions, objectifs, réglages</td><td>Faire fonctionner l'application</td><td>Sur votre appareil (stockage du navigateur). Elle ne quitte l'appareil que si vous activez la synchro (section 3).</td></tr>
+<tr><td><strong>Adresse e-mail et mot de passe</strong> du compte</td><td>Ouvrir l'application, valider votre adresse, réinitialiser votre mot de passe</td><td>Google Firebase Authentication. Le mot de passe est géré par Firebase ; l'éditeur ne le voit pas.</td></tr>
+<tr><td><strong>Copie de votre budget</strong> (synchro, facultative)</td><td>Retrouver votre budget sur plusieurs appareils</td><td>Google Firebase (base Firestore)</td></tr>
+<tr><td><strong>Budget du foyer</strong> (mode couple synchronisé, facultatif)</td><td>Partager le budget avec votre partenaire</td><td>Google Firebase (base Firestore), associé à un code d'invitation</td></tr>
+<tr><td><strong>Achat et licence Plus</strong> : nom, e-mail, pays, commande, clé de licence</td><td>Vendre et activer la licence</td><td>Lemon Squeezy, vendeur officiel. Les données de paiement sont traitées par Lemon Squeezy, jamais par Mon Budget.</td></tr>
+<tr><td><strong>Statistiques de visite</strong> : pages vues, provenance, clics sur les boutons, type d'appareil, zone géographique approximative</td><td>Mesurer l'audience du site public</td><td>Google Analytics, <strong>seulement si vous cliquez sur « Accepter »</strong></td></tr>
+<tr><td><strong>Adresse IP</strong>, lors de la visite du site</td><td>Fournir les pages (journaux techniques de l'hébergeur)</td><td>GitHub Pages (hébergement) ; Google lors du chargement du service de compte dans l'application</td></tr>
+</table></div>
+
+<h2>3. La synchro et le mode couple : ce qu'il faut savoir</h2>
+<div class="note">
+<p style="margin:0">Si vous activez la <strong>synchro</strong>, l'ensemble de vos données de l'application (revenus, charges, transactions, objectifs, réglages) est copié sur les serveurs de Google (Firebase). <strong>Ces données ne sont pas chiffrées de bout en bout</strong> : l'éditeur, qui administre la base, y a techniquement accès. Il ne les consulte pas, sauf si vous lui demandez de l'aide ou si la loi l'y oblige.</p>
+</div>
+<ul>
+<li>Vous pouvez <strong>désactiver la synchro à tout moment</strong> dans Compte. Vos données locales ne changent pas.</li>
+<li>Avec le <strong>mode couple synchronisé</strong>, votre budget est déposé dans un « foyer » identifié par un <strong>code d'invitation de 6 caractères</strong>. <strong>Ne communiquez ce code qu'à votre partenaire.</strong></li>
+<li>Dans le mode famille, n'enregistrez que des <strong>prénoms ou surnoms</strong> pour les enfants.</li>
+<li>Pour supprimer les données en ligne, voir la section 6.</li>
+</ul>
+
+<h2>4. Prestataires et transferts hors Union européenne</h2>
+<ul>
+<li><strong>Google</strong> (Firebase : compte et synchro ; Google Analytics, avec votre accord).</li>
+<li><strong>GitHub</strong> (hébergement du site).</li>
+<li><strong>Lemon Squeezy</strong> (paiement, facturation, clés de licence). Lors de l'activation, l'application envoie la clé de licence à Lemon Squeezy depuis votre navigateur.</li>
+<li><strong>Cloudflare</strong> (nom de domaine et DNS). Le trafic du site ne passe pas par Cloudflare.</li>
+</ul>
+<p>Certains de ces prestataires sont établis aux États-Unis. Ils s'appuient sur les mécanismes prévus par le RGPD pour encadrer ces transferts. Les polices du site sont hébergées sur le site lui-même : aucune requête vers un service de polices.</p>
+
+<h2>5. Combien de temps ?</h2>
+<ul>
+<li><strong>Données locales</strong> : tant que vous les gardez sur votre appareil.</li>
+<li><strong>Compte et données synchronisées</strong> : jusqu'à ce que vous demandiez leur suppression.</li>
+<li><strong>Statistiques</strong> : au plus 14 mois.</li>
+<li><strong>Achats et factures</strong> : la durée imposée par les obligations comptables et fiscales.</li>
+</ul>
+
+<h2>6. Vos droits et comment les exercer</h2>
+<p>Vous pouvez demander l'<strong>accès</strong>, la <strong>rectification</strong>, l'<strong>effacement</strong>, la <strong>portabilité</strong> (la sauvegarde JSON de Paramètres → Données vous donne déjà vos données) ou vous <strong>opposer</strong> à un traitement.</p>
+<p><strong>Supprimer votre compte et vos données en ligne</strong> : dans l'application, onglet <strong>Compte</strong>, carte « Mon compte », bouton <strong>« Supprimer mon compte et mes données en ligne »</strong>. Il vous demande votre mot de passe puis la confirmation « SUPPRIMER ». La suppression est <strong>immédiate et définitive</strong> : elle efface votre compte, la copie en ligne de votre budget et, selon votre situation, votre foyer (si vous en êtes le titulaire) ou vos données dans le foyer que vous avez rejoint. Google peut conserver des copies de sauvegarde pendant une durée limitée avant leur effacement définitif.</p>
+<p>La suppression <strong>n'efface pas le budget enregistré sur votre appareil</strong> : il reste sous votre seul contrôle (faites une sauvegarde JSON avant si vous voulez le garder). Vos achats restent enregistrés chez Lemon Squeezy pour les obligations comptables, et votre clé de licence reste valable.</p>
+<p>Vous pouvez aussi demander la suppression par e-mail à <a href="mailto:bonjour.monbudget@gmail.com">bonjour.monbudget@gmail.com</a>, depuis l'adresse de votre compte : elle est faite dans un délai d'un mois au plus.</p>
+<p>Si vous estimez que vos droits ne sont pas respectés, vous pouvez saisir la <a href="https://www.cnil.fr/fr/plaintes" rel="noopener">CNIL</a>.</p>
+
+<h2>7. Cookies et stockage local</h2>
+<p>Le détail est dans la page <a href="cookies.html">Cookies</a>.</p>
+
+<h2>8. Mises à jour</h2>
+<p>Cette page peut évoluer, par exemple si la synchro devient chiffrée de bout en bout. La date de la dernière mise à jour est ci-dessous.</p>
+<p class="maj">Dernière mise à jour : 10 novembre 2026.</p>
+
+</article>
+
+<footer>
+  © Mon Budget 2026 · <a href="index.html">Accueil</a> · <a href="app.html">Ouvrir l'application</a> · <a href="confidentialite.html">Confidentialité</a>
+</footer>
+</div>
+</body>
+</html>

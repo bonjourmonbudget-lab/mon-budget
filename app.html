@@ -486,13 +486,14 @@
       <a class="linklike" data-action="mur-reset" style="font-size:12px;color:var(--muted)">Mot de passe oublié ?</a>
     </div>
     <div id="mur-status" style="margin-top:8px;font-size:12px;min-height:16px;color:var(--muted)"></div>
+    <div style="margin-top:6px;text-align:center;font-size:11.5px;color:var(--muted-2)"><a href="confidentialite.html" target="_blank" rel="noopener" style="color:var(--muted)">Politique de confidentialité</a></div>
     <a id="mur-continuer" data-action="mur-continuer" hidden style="display:block;margin-top:12px;text-align:center;font-size:12px;color:var(--muted-2)">Service de connexion inaccessible — continuer sans compte</a>
   </div>
 </div>
 
 <main id="app"></main>
 
-<footer>Mon Budget — 2026 · Vos données budgétaires sont stockées sur votre appareil ; une copie en ligne n'existe que si vous activez la synchro.</footer>
+<footer>Mon Budget — 2026 · Vos données budgétaires sont stockées sur votre appareil ; une copie en ligne n'existe que si vous activez la synchro. · <a href="confidentialite.html" target="_blank" rel="noopener">Confidentialité</a></footer>
 <button id="haut-page" title="Retour en haut de page" style="display:none">⬆</button>
 
 <!-- Connexion par email (Firebase Auth) — la config est publique par conception -->
@@ -3439,7 +3440,8 @@ function renderCompte(){
           ${!MB_user.emailVerified ? `<button class="btn btn-ghost btn-sm" data-action="compte-resend">📧 Renvoyer l'email de validation</button>` : ""}
           <button class="btn btn-ghost btn-sm" data-action="compte-logout">Se déconnecter</button>
         </div>
-        <p style="color:var(--muted-2);font-size:12px;margin-top:10px">Nouvel appareil ? Reconnectez-vous, puis recollez votre clé de licence (reçue par email lors de l'achat) dans la carte « Mon Budget Plus ».</p>`;
+        <p style="color:var(--muted-2);font-size:12px;margin-top:10px">Nouvel appareil ? Reconnectez-vous, puis recollez votre clé de licence (reçue par email lors de l'achat) dans la carte « Mon Budget Plus ».</p>
+        ${supprHtml()}`;
     } else {
       html = `<div class="row" style="margin-top:10px"><button class="btn btn-grad btn-sm" data-action="compte-open">Se connecter / Créer mon compte</button></div>`;
     }
@@ -3801,6 +3803,93 @@ async function syncRecuperer(){
   }
 }
 
+/* ============ Suppression du compte et des données en ligne (RGPD) ============
+   Efface : la copie de synchro, le foyer (si titulaire) ou vos données dans le foyer (si partenaire),
+   puis le compte lui-même. Le budget enregistré sur l'appareil n'est PAS touché. */
+let MB_supprOuvert = false, MB_supprEnCours = false;
+function supprHtml(){
+  if(!MB_supprOuvert){
+    return `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+      <button class="btn btn-danger btn-sm" data-action="compte-suppr-open">🗑 Supprimer mon compte et mes données en ligne</button>
+    </div>`;
+  }
+  const f = S && S.foyer && S.foyer.code ? S.foyer : null;
+  const foyerTxt = !f ? "" : (f.role === "proprietaire"
+    ? ", <b>votre foyer</b> (le code d'invitation cessera de fonctionner pour votre partenaire)"
+    : ", <b>vos données dans le foyer</b> que vous avez rejoint");
+  return `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px">Supprimer mon compte</div>
+    <p style="color:var(--muted);font-size:12.5px;margin:6px 0">Seront effacés <b>définitivement</b> : votre compte (${esc(MB_user ? MB_user.email : "")}), la copie en ligne de votre budget (synchro)${foyerTxt}.</p>
+    <p style="color:var(--muted);font-size:12.5px;margin:6px 0">Ne seront <b>pas</b> effacés : le budget enregistré sur <b>cet appareil</b> (pensez à faire une sauvegarde avec « ⬇ Sauvegarde JSON » avant) et votre achat chez Lemon Squeezy (conservé pour la comptabilité). Votre clé de licence reste valable.</p>
+    <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:10px">
+      <input class="lab" id="suppr-mdp" type="password" autocomplete="current-password" placeholder="Votre mot de passe" style="flex:1;min-width:170px">
+      <input class="lab" id="suppr-conf" type="text" autocomplete="off" placeholder="Tapez SUPPRIMER" style="flex:1;min-width:150px">
+    </div>
+    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-danger btn-sm" data-action="compte-suppr-go">Supprimer définitivement</button>
+      <button class="btn btn-ghost btn-sm" data-action="compte-suppr-cancel">Annuler</button>
+    </div>
+    <div id="suppr-status" style="margin-top:8px;font-size:12.5px;min-height:16px;color:var(--muted)"></div>
+  </div>`;
+}
+function supprMsg(txt, err){
+  const el = document.getElementById("suppr-status");
+  if(el){ el.textContent = txt || ""; el.style.color = err ? "#ef4444" : "var(--muted)"; }
+  else if(txt) toast(txt);
+}
+async function mbSupprimerCompte(){
+  if(MB_supprEnCours) return;
+  if(!MB_user || !mbFs()){ supprMsg("Connectez-vous d'abord.", true); return; }
+  const mdp = document.getElementById("suppr-mdp")?.value || "";
+  const conf = (document.getElementById("suppr-conf")?.value || "").trim().toUpperCase();
+  if(conf !== "SUPPRIMER"){ supprMsg("Tapez SUPPRIMER (en toutes lettres) pour confirmer.", true); return; }
+  if(mdp.length < 6){ supprMsg("Saisissez votre mot de passe pour confirmer que c'est bien vous.", true); return; }
+  MB_supprEnCours = true;
+  const uid = MB_user.uid;
+  const foyer = (S.foyer && S.foyer.code) ? { code: S.foyer.code, role: S.foyer.role } : null;
+  try{
+    supprMsg("⏳ Vérification du mot de passe…");
+    const cred = firebase.auth.EmailAuthProvider.credential(MB_user.email, mdp);
+    await MB_user.reauthenticateWithCredential(cred);
+    // Arrêter toute synchro avant d'effacer, sinon un envoi différé recréerait les données
+    mbStopEcoute(); clearTimeout(MB_pushTimer); MB_pushTimer = null; MB_pausePlan = true;
+    supprMsg("⏳ Suppression de vos données en ligne…");
+    const db = mbFs();
+    await db.collection("users").doc(uid).collection("sync").doc("main").delete();
+    if(foyer){
+      const ref = db.collection("foyers").doc(foyer.code);
+      try{
+        if(foyer.role === "proprietaire") await ref.delete();
+        else await ref.update({ partenaire: null, dataPart: firebase.firestore.FieldValue.delete(), majPart: firebase.firestore.FieldValue.delete() });
+      }catch(e){ if(!(e && e.code === "not-found")) throw e; }
+    }
+    supprMsg("⏳ Suppression du compte…");
+    await MB_user.delete();
+    S.sync = { on:false }; S.foyer = null; S.foyerConnecte = false;
+    MB_donneesPartenaire = null; MB_syncErreur = null; MB_cloudDevant = false; MB_supprOuvert = false;
+    MB_pausePlan = false;
+    save(); render();
+    toast("Compte supprimé. Vos données en ligne sont effacées ; votre budget reste sur cet appareil.");
+  }catch(err){
+    MB_pausePlan = false;
+    const code = (err && err.code) || "";
+    if(code === "auth/wrong-password" || code === "auth/invalid-credential" || code === "auth/invalid-login-credentials"){
+      supprMsg("Mot de passe incorrect. Rien n'a été supprimé.", true);
+    } else if(code === "auth/too-many-requests"){
+      supprMsg("Trop d'essais : réessayez dans quelques minutes. Rien n'a été supprimé.", true);
+    } else if(code === "auth/network-request-failed" || code === "unavailable"){
+      supprMsg("Connexion impossible : vérifiez votre réseau et réessayez.", true);
+    } else if(code === "permission-denied"){
+      supprMsg("Le service a refusé la suppression en ligne. Écrivez à bonjour.monbudget@gmail.com depuis l'adresse de votre compte : la suppression sera faite à la main.", true);
+    } else if(code === "auth/requires-recent-login"){
+      supprMsg("Pour votre sécurité, reconnectez-vous puis recommencez.", true);
+    } else {
+      supprMsg("La suppression a échoué (" + (code || (err && err.message) || "erreur") + "). Écrivez à bonjour.monbudget@gmail.com si le problème persiste.", true);
+    }
+  }
+  finally{ MB_supprEnCours = false; }
+}
+
 /* Gestionnaire au niveau document : le bouton du bandeau, le panneau et le mur
    sont en dehors de #app, un écouteur sur #app ne verrait jamais leurs clics */
 document.addEventListener("click", async e=>{
@@ -3859,6 +3948,9 @@ document.addEventListener("click", async e=>{
     try{ await firebase.auth().signOut(); toast("Déconnecté. À bientôt !"); }
     catch(_){ toast("Déconnexion impossible pour le moment."); }
   }
+  else if(a==="compte-suppr-open"){ MB_supprOuvert = true; renderCompte(); setTimeout(()=>document.getElementById("suppr-mdp")?.focus(), 40); }
+  else if(a==="compte-suppr-cancel"){ if(!MB_supprEnCours){ MB_supprOuvert = false; renderCompte(); } }
+  else if(a==="compte-suppr-go"){ mbSupprimerCompte(); }
   else if(a==="mur-continuer"){ masquerMur(); return; }
 });
 
