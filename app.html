@@ -838,7 +838,7 @@ async function activerCleLemonSqueezy(cle, stEl){
     const data = await rep.json();
     if(rep.ok && data.activated && data.license_key && data.license_key.status === "active"){
       S.license = {cle, type:"ls", instance: (data.instance && data.instance.id) || null};
-      save(); render();
+      save(); render(); mbLicenceEnvoyer();
       toast("Mon Budget Plus activé 🎉 Merci pour votre achat !");
       return;
     }
@@ -2977,7 +2977,7 @@ document.getElementById("app").addEventListener("click", async e=>{
       const cle = brut.toUpperCase();
       if(!cleValide(cle)){ toast("Clé Mon Budget invalide."); return; }
       S.license = {cle, type:"dev"};
-      save(); render(); toast("Mon Budget Plus activé 🎉");
+      save(); render(); mbLicenceEnvoyer(); toast("Mon Budget Plus activé 🎉");
       return;
     }
     // Clé Lemon Squeezy (reçue par email après achat) : validation en ligne, une seule fois
@@ -2993,6 +2993,7 @@ document.getElementById("app").addEventListener("click", async e=>{
         body: JSON.stringify({license_key: l.cle, instance_id: l.instance||""})
       }).catch(()=>{});
     }
+    mbLicenceEffacerCloud();
     S.license = {cle:""}; save(); render(); toast("Licence désactivée.");
   }
   else if(a==="goto-landing"){ location.href = "index.html#tarifs"; }
@@ -3806,6 +3807,57 @@ async function syncRecuperer(){
   }
 }
 
+/* ============ Licence Plus rattachée au compte ============
+   La clé est enregistrée dans users/{uid}/licence/main (lisible par son seul titulaire, voir les règles Firestore),
+   puis retrouvée et re-vérifiée auprès de Lemon Squeezy à la connexion sur un autre appareil.
+   La vérification (validate) ne consomme aucune activation. */
+function licRef(){
+  return (MB_user && mbFs()) ? mbFs().collection("users").doc(MB_user.uid).collection("licence").doc("main") : null;
+}
+async function mbLicenceEnvoyer(){
+  const ref = licRef(); const l = S && S.license;
+  if(!ref || !l || !l.cle || !(l.type === "ls" || l.type === "dev")) return;
+  try{ await ref.set({ cle: l.cle, type: l.type, instance: l.instance || null, maj: firebase.firestore.FieldValue.serverTimestamp() }); }catch(_){}
+}
+async function mbLicenceEffacerCloud(){
+  const ref = licRef(); if(!ref) return;
+  try{ await ref.delete(); }catch(_){}
+}
+async function validerCleLemonSqueezy(cle){
+  try{
+    const rep = await fetch("https://api.lemonsqueezy.com/v1/licenses/validate", {
+      method: "POST",
+      headers: {"Content-Type": "application/json", "Accept": "application/json"},
+      body: JSON.stringify({license_key: cle})
+    });
+    const data = await rep.json();
+    const st = data && data.license_key && data.license_key.status;
+    return !!(data && data.valid === true && (st === "active" || st === "inactive"));
+  }catch(_){ return null; } // null = vérification impossible (hors-ligne)
+}
+async function mbLicenceCompte(){
+  const ref = licRef(); if(!ref) return;
+  try{
+    const doc = await ref.get();
+    const locale = estPlus();
+    if(!doc.exists){ if(locale) await mbLicenceEnvoyer(); return; }
+    if(locale) return;
+    const d = doc.data();
+    if(!d || !d.cle) return;
+    if(d.type === "dev"){
+      if(!cleValide(d.cle)) return;
+      S.license = {cle: d.cle, type: "dev"};
+    } else {
+      const ok = await validerCleLemonSqueezy(d.cle);
+      if(ok === null) return;                       // hors-ligne : on réessaiera à la prochaine connexion
+      if(!ok){ toast("La licence enregistrée sur votre compte n'est plus valide."); return; }
+      S.license = {cle: d.cle, type: "ls", instance: d.instance || null};
+    }
+    save(); render();
+    toast("Mon Budget Plus retrouvé sur votre compte ✨");
+  }catch(_){}
+}
+
 /* ============ Suppression du compte et des données en ligne (RGPD) ============
    Efface : la copie de synchro, le foyer (si titulaire) ou vos données dans le foyer (si partenaire),
    puis le compte lui-même. Le budget enregistré sur l'appareil n'est PAS touché. */
@@ -3859,6 +3911,7 @@ async function mbSupprimerCompte(){
     supprMsg("⏳ Suppression de vos données en ligne…");
     const db = mbFs();
     await db.collection("users").doc(uid).collection("sync").doc("main").delete();
+    await db.collection("users").doc(uid).collection("licence").doc("main").delete();
     if(foyer){
       const ref = db.collection("foyers").doc(foyer.code);
       try{
@@ -3971,7 +4024,7 @@ window.addEventListener("DOMContentLoaded", ()=>{
       mbInitFait = true;
       majMur();
       renderCompte(); renderSync(); majSyncBadge();
-      if(u && !avant){ toast("✅ Connecté : " + u.email); mbCheckCloud(); mbEcouterCloud(); mbFoyerPull(); }
+      if(u && !avant){ toast("✅ Connecté : " + u.email); mbCheckCloud(); mbEcouterCloud(); mbFoyerPull(); mbLicenceCompte(); }
       if(!u && avant){ toast("Déconnecté."); }
       if(!u) mbStopEcoute();
     });

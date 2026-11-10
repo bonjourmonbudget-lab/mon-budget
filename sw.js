@@ -1,5 +1,5 @@
 /* Mon Budget — service worker : fonctionne hors-ligne (vitrine + application) */
-const CACHE = "monbudget-v49";
+const CACHE = "monbudget-v50";
 const ASSETS = ["./", "./index.html", "./app.html", "./jeu.html", "./methode-enveloppes.html", "./alternative-applis-budget.html", "./budget-a-deux.html", "./budget-enfants.html", "./fonds-urgence.html", "./consent.js", "./confidentialite.html", "./cookies.html", "./fonts.css", "./fonts-jeu.css", "./fonts/inter-latin.woff2", "./fonts/inter-latin-ext.woff2", "./fonts/baloo2-latin.woff2", "./fonts/baloo2-latin-ext.woff2", "./manifest.json", "./icon-192.png", "./icon-512.png", "./apercu.png"];
 
 self.addEventListener("install", (e) => {
