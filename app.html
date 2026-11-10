@@ -496,10 +496,13 @@
 <footer>Mon Budget — 2026 · Vos données budgétaires sont stockées sur votre appareil ; une copie en ligne n'existe que si vous activez la synchro. · <a href="confidentialite.html" target="_blank" rel="noopener">Confidentialité</a></footer>
 <button id="haut-page" title="Retour en haut de page" style="display:none">⬆</button>
 
-<!-- Connexion par email (Firebase Auth) — la config est publique par conception -->
-<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<!-- Connexion par email (Firebase Auth) — la config est publique par conception.
+     SDK 13.2.0 « compat » ; integrity = empreinte SHA-384 du fichier : si Google servait
+     un fichier modifié, le navigateur refuserait de l'exécuter (repli « continuer sans compte »).
+     Pour changer de version : recalculer les 3 empreintes (voir README). -->
+<script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-app-compat.js" integrity="sha384-cLbh0Cu4dx/85kRPmEgNAXMBIChYFkojdl+72mu8+CktIaQ1u3yBrkyiKnDRkZ2q" crossorigin="anonymous"></script>
+<script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-auth-compat.js" integrity="sha384-4nmyawBuPA7UcE167bEqFiWjWvbYi/4+pPVJIglWre5cWJrdcMmq1BQJejMsZjFb" crossorigin="anonymous"></script>
+<script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore-compat.js" integrity="sha384-GHWlC9m/51vE+OUgd7/bifFHoPpmxesvM2MyoM0DP8zOuSG6h+e6QsbkCSlvkIWs" crossorigin="anonymous"></script>
 
 <script>
 "use strict";
