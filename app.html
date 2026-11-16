@@ -1265,7 +1265,7 @@ function renderDash(){
     <div class="card kpi">
       <div class="lbl">Charges fixes</div>
       <div class="val">${fmt0.format(chg)}</div>
-      <div class="sub">${rev>0?Math.round(chg/rev*100):0} % du revenu · détail dans Vos revenus</div>
+      <div class="sub">${rev>0?Math.round(chg/rev*100):0} % du revenu · détail dans Vos dépenses</div>
     </div>
     <div class="card kpi">
       <div class="lbl">Reste à vivre</div>
@@ -1296,14 +1296,14 @@ function renderDash(){
       <a data-action="goto" data-tab="budget">Gérer les enveloppes →</a>
     </div>
     <div class="env-layout${UI.calc.visible ? " with-calc" : ""}">
-      <div class="card cat-card" data-action="goto" data-tab="settings" style="cursor:pointer">
+      <div class="card cat-card" data-action="goto" data-tab="tx" style="cursor:pointer">
         <div class="row1">${dot("#8b5cf6")}<span class="name">Charges fixes — détail</span><span class="badge ok">récurrent</span></div>
         <div class="fx-list">
           ${S.settings.chargesFixes.map(c=>{const fc=fixedCatOf(c.cat);return `
           <div class="fx-item" title="${esc(c.label)} — ${esc(fc.label)}">${dot(fc.color)}<span class="lblx">${esc(c.label||"Sans nom")}</span><span class="amt">${fmt0.format(+c.montant||0)}</span></div>`;}).join("") || `<div class="fx-item"><span class="lblx" style="color:var(--muted-2)">Aucune charge fixe</span></div>`}
         </div>
         <div class="nums"><span>Total prélevé chaque mois</span><b>${fmt0.format(chg)}</b></div>
-        <div class="nums"><span class="hint" style="font-size:12px">Modifiable dans <a class="linklike" data-action="goto" data-tab="settings">Vos revenus</a></span></div>
+        <div class="nums"><span class="hint" style="font-size:12px">Modifiable dans <a class="linklike" data-action="goto" data-tab="tx">Vos dépenses</a></span></div>
       </div>
       <div class="grid-cats">
       ${cats().filter(c=>c.id!=="revenu").map(c=>{
@@ -1380,7 +1380,7 @@ function renderTx(){
   return `
   <section class="hero">
     <h1><span class="grad-text">Transactions</span> du mois</h1>
-    <p class="sub">Saisissez vos dépenses variables et vos virements d'épargne. Les charges fixes récurrentes sont gérées dans Vos revenus.</p>
+    <p class="sub">Saisissez vos dépenses variables et vos virements d'épargne. Vos charges fixes récurrentes se gèrent juste en dessous.</p>
   </section>
 
   <section class="section">
@@ -1393,6 +1393,10 @@ function renderTx(){
         <button class="btn btn-grad" type="submit">Ajouter</button>
       </form>
     </div>
+  </section>
+
+  <section class="section">
+    ${chargesFixesCardHtml()}
   </section>
 
   <section class="section">
@@ -1597,7 +1601,7 @@ function renderPlan(){
 }
 
 const CHECK_LABELS = {
-  c1:"Lister toutes mes charges fixes dans Vos revenus (loyer, crédits, abonnements…)",
+  c1:"Lister toutes mes charges fixes dans Vos dépenses (loyer, crédits, abonnements…)",
   c2:"Résilier ou renégocier 2 abonnements peu utilisés",
   c3:"Définir mes enveloppes dans l'onglet Budget",
   c4:"Ouvrir un compte épargne séparé (Livret A, LDDS ou compte à terme)",
@@ -1657,16 +1661,9 @@ function renderImportPanel(){
 
 /* ============================== Rendu : Paramètres ============================== */
 
-function renderSettings(){
+/* Carte « Charges fixes — détail » : affichée dans l'onglet Vos dépenses (avant : Vos revenus) */
+function chargesFixesCardHtml(){
   const chg = chargesTotal();
-  const rev = revenuTotal();
-  const revRows = S.settings.revenus.map(r=>`
-    <div class="row">
-      <input class="lab" type="text" value="${esc(r.label)}" data-rev="${r.id}" data-rfield="label" placeholder="Ex. Salaire principal">
-      <input class="mont" type="text" inputmode="decimal" value="${String(r.montant).replace(".",",")}" data-rev="${r.id}" data-rfield="montant" placeholder="0">
-      <input type="month" value="${r.depuis||""}" data-rev="${r.id}" data-rfield="depuis" title="Applicable à partir de ce mois (facultatif — vide = toujours)" style="width:150px;padding:9px 10px;border-radius:10px;border:1px solid var(--border-2);background:var(--bg);color:var(--text);font-family:inherit;font-size:13.5px">
-      <button class="icon-btn" data-action="del-revenu" data-id="${r.id}" title="Supprimer">✕</button>
-    </div>`).join("");
   const fixedByCat = FIXED_CATS.map(fc=>{
     const amt = S.settings.chargesFixes.filter(c=>c.cat===fc.id).reduce((s,c)=>s+(+c.montant||0),0);
     return {fc, amt};
@@ -1679,11 +1676,31 @@ function renderSettings(){
       <input type="month" value="${c.depuis||""}" data-charge="${c.id}" data-cfield="depuis" title="Applicable à partir de ce mois (facultatif — vide = toujours)" style="width:150px;padding:9px 10px;border-radius:10px;border:1px solid var(--border-2);background:var(--bg);color:var(--text);font-family:inherit;font-size:13.5px">
       <button class="icon-btn" data-action="del-charge" data-id="${c.id}" title="Supprimer">✕</button>
     </div>`).join("");
+  return `
+    <div class="card settings-card" id="charges-fixes">
+      <h3 style="font-size:16px">Charges fixes — détail</h3>
+      <p style="color:var(--muted);font-size:12.5px;margin:8px 0 4px">Loyer, abonnements, crédits… Ces montants sont prélevés chaque mois automatiquement : inutile de les saisir dans l'historique ci-dessous.</p>
+      ${rows || `<div class="empty">Aucune charge fixe pour l'instant.</div>`}
+      <div class="total-line"><span>Total des charges fixes</span><span>${fmt0.format(chg)}</span></div>
+      ${fixedByCat.length>1 ? `<div class="chips" style="margin-top:10px">${fixedByCat.map(({fc,amt})=>`<span class="chip">${dot(fc.color)}${esc(fc.label)}&nbsp;<b>${fmt0.format(amt)}</b></span>`).join("")}</div>` : ""}
+      <div class="row"><button class="btn btn-ghost btn-sm" data-action="add-charge">＋ Ajouter une charge fixe</button></div>
+    </div>`;
+}
+
+function renderSettings(){
+  const rev = revenuTotal();
+  const revRows = S.settings.revenus.map(r=>`
+    <div class="row">
+      <input class="lab" type="text" value="${esc(r.label)}" data-rev="${r.id}" data-rfield="label" placeholder="Ex. Salaire principal">
+      <input class="mont" type="text" inputmode="decimal" value="${String(r.montant).replace(".",",")}" data-rev="${r.id}" data-rfield="montant" placeholder="0">
+      <input type="month" value="${r.depuis||""}" data-rev="${r.id}" data-rfield="depuis" title="Applicable à partir de ce mois (facultatif — vide = toujours)" style="width:150px;padding:9px 10px;border-radius:10px;border:1px solid var(--border-2);background:var(--bg);color:var(--text);font-family:inherit;font-size:13.5px">
+      <button class="icon-btn" data-action="del-revenu" data-id="${r.id}" title="Supprimer">✕</button>
+    </div>`).join("");
 
   return `
   <section class="hero" style="text-align:center">
     <h1><span class="grad-text">Paramètres</span> du budget</h1>
-    <p class="sub" style="margin-left:auto;margin-right:auto;max-width:640px">Vos chiffres de base : vos différents revenus, le détail des charges fixes (loyer, abonnements, crédits…) et votre objectif d'épargne. Tout le reste se recalcule automatiquement.</p>
+    <p class="sub" style="margin-left:auto;margin-right:auto;max-width:640px">Vos chiffres de base : vos différents revenus et votre objectif d'épargne. Les charges fixes (loyer, abonnements, crédits…) se gèrent dans l'onglet Vos dépenses. Tout le reste se recalcule automatiquement.</p>
   </section>
 
   <section class="section" style="display:flex;flex-direction:column;gap:16px;max-width:760px;margin:48px auto 0">
@@ -1730,14 +1747,6 @@ function renderSettings(){
           : `<div class="empty" style="padding:12px">Aucune rentrée exceptionnelle en ${esc(monthLabel(mois))}.</div>`;
       })() }
       </div>
-    </div>
-
-    <div class="card settings-card">
-      <h3 style="font-size:16px">Charges fixes — détail</h3>
-      ${rows || `<div class="empty">Aucune charge fixe pour l'instant.</div>`}
-      <div class="total-line"><span>Total des charges fixes</span><span>${fmt0.format(chg)}</span></div>
-      ${fixedByCat.length>1 ? `<div class="chips" style="margin-top:10px">${fixedByCat.map(({fc,amt})=>`<span class="chip">${dot(fc.color)}${esc(fc.label)}&nbsp;<b>${fmt0.format(amt)}</b></span>`).join("")}</div>` : ""}
-      <div class="row"><button class="btn btn-ghost btn-sm" data-action="add-charge">＋ Ajouter une charge fixe</button></div>
     </div>
 
     <div class="card settings-card">
@@ -2698,7 +2707,7 @@ function welcomeHtml(){
       <h3 style="font-size:20px;font-weight:800;margin:14px 0 10px">Bienvenue dans Mon Budget</h3>
       <p style="color:var(--muted);font-size:13.5px">Vos données resteront sur votre machine, jamais sur un serveur. Deux façons de commencer :</p>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:22px">
-        <button class="btn btn-grad" data-action="welcome-zero">🚀 Partir de zéro (assistant Vos revenus)</button>
+        <button class="btn btn-grad" data-action="welcome-zero">🚀 Partir de zéro (revenus, puis charges fixes)</button>
         <button class="btn btn-ghost" data-action="welcome-demo">📊 Découvrir avec les données de démo</button>
       </div>
       <p style="color:var(--muted-2);font-size:12px;margin-top:16px">Vous pourrez changer d'avis : tout est modifiable et exportable.</p>
@@ -3012,7 +3021,7 @@ document.getElementById("app").addEventListener("click", async e=>{
       license:S.license||{cle:""}, visite:true, savedAt:Date.now()
     };
     save(); UI.tab = "settings"; render();
-    toast("À vous de jouer — renseignez vos revenus et vos charges fixes.");
+    toast("À vous de jouer — renseignez vos revenus (Vos revenus) et vos charges fixes (Vos dépenses).");
   }
   else if(a==="partner-open" || a==="partner-replace"){ const f = document.getElementById("partner-file"); if(f) f.click(); }
   else if(a==="partner-remove"){
