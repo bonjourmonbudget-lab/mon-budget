@@ -415,6 +415,15 @@
   .settings-card .row .lab{flex:1;min-width:130px}
   .settings-card .row .mont{width:140px;text-align:right}
   .settings-card .row .cat-sel{width:175px;flex:none;padding:9px 10px}
+  /* Téléphone : les lignes passent à la ligne au lieu de dépasser de l'écran */
+  @media (max-width:640px){
+    .settings-card .row{flex-wrap:wrap}
+    .settings-card .row .lab{flex:1 1 calc(100% - 52px);min-width:0;order:1}
+    .settings-card .row .icon-btn{order:2}
+    .settings-card .row .cat-sel{flex:1 1 150px;width:auto;min-width:0;order:3}
+    .settings-card .row .mont{flex:1 1 100px;width:auto;min-width:0;order:3}
+    .settings-card .row input[type=month]{flex:1 1 130px;width:auto !important;min-width:0;order:3}
+  }
   .total-line{display:flex;justify-content:space-between;padding:12px 2px 0;margin-top:12px;border-top:1px solid var(--border);font-weight:700}
 
   body.can-install #btn-install{display:inline-flex !important}
